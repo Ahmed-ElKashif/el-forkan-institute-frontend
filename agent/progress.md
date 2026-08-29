@@ -12,20 +12,22 @@ though F0d (deploy + the cookie decision) is the one not to defer.
 
 ## Design system handoff (2026-08-29) ✅ done
 
-Claude Design produced `frontend/el-forkan-design-system/` from the backend repo
+Claude Design produced the handoff bundle `el-forkan-design-system/` from the backend repo
 plus a `design-context/` brief written from the logo. It contains 40 components,
 6 token files, 17 guideline cards, 8 prototype screens, a `.d.ts` per component,
 an adherence lint config and a `SKILL.md`.
 
 Reviewed in full before any code was written. Findings and their disposition are
 in build-plan Part 1. The bundle is **read-only reference** — do not edit it and
-do not import from it. `frontend/app/src/ds/` is the implementation.
+do not import from it; `src/ds/` is the implementation. Note it sits **outside
+this repository**, one level up in the working tree, so a fresh clone will not
+have it.
 
 ---
 
 ## F0a — Vendor the design system ✅ done
 
-Scaffolded `frontend/app/` (Vite + React 19 + TypeScript + Tailwind v4), its own
+Scaffolded this repo (Vite + React 19 + TypeScript + Tailwind v4), its own
 git repo, nothing committed yet.
 
 - Copied the token CSS in unchanged; mapped it into Tailwind with `@theme inline`
@@ -144,7 +146,7 @@ does:
 
 ## Still open
 
-Both are inherited from `backend/agent/progress.md` and block design, not code:
+Both are inherited from [`agent/progress.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/progress.md) in the backend repo and block design, not code:
 
 1. **Certificate printed wording and layout** — blocks F5. `CertificateSheet`
    carries a placeholder body, flagged in its own source comment.

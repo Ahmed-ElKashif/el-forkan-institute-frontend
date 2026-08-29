@@ -1,6 +1,6 @@
 # Memory — gotchas that cost real time
 
-Frontend companion to `backend/agent/memory.md`. Each entry is something that
+Frontend companion to [`agent/memory.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/memory.md) in the backend repo. Each entry is something that
 was diagnosed the hard way. Read this before debugging anything that looks
 similar. Not product code; reference for humans and future Claude sessions.
 
@@ -20,7 +20,7 @@ Verified against the running API, and it contradicts the obvious assumption.
 ```
 
 `csrf-csrf` rejects the request **before any auth code runs**, because the CSRF
-secret is bound to a hash of that same refresh cookie (`backend/src/auth/csrf.ts`).
+secret is bound to a hash of that same refresh cookie ([`src/auth/csrf.ts`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/src/auth/csrf.ts)).
 So the session-expired path arrives as a 403 with a CSRF message, not the 401 the
 endpoint's own exceptions suggest.
 
@@ -48,12 +48,12 @@ rather than guessing. Do not add a third guess without checking the API.
 ## The login throttle will lock you out during development
 
 5 attempts per minute, keyed on **IP *and* username**
-(`backend/src/auth/guards/login-throttler.guard.ts`). You will hit this. It
+([`src/auth/guards/login-throttler.guard.ts`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/src/auth/guards/login-throttler.guard.ts)). You will hit this. It
 surfaces as a 429, which the UI reports as a throttle rather than a bad
 password — recognise the message before you start debugging credentials.
 
 Seeded head teacher: `headteacher` / `ChangeMe123!`
-(`backend/prisma/seed-head-teacher.ts`).
+([`prisma/seed-head-teacher.ts`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/prisma/seed-head-teacher.ts)).
 
 ## The refresh cookie will silently vanish in production
 
@@ -62,7 +62,7 @@ F1 in the build plan. `SameSite=Strict` plus two separate Render subdomains mean
 backend and frontend are cross-site, and the browser drops the refresh cookie
 without an error. Login appears to work and every refresh fails. Fix is a custom
 domain under one registrable root, or `SameSite=None; Secure` as a stopgap. Full
-writeup in `backend/agent/memory.md`.
+writeup in [`agent/memory.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/memory.md) in the backend repo.
 
 ---
 

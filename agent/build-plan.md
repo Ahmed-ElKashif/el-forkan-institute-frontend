@@ -1,7 +1,7 @@
 # Frontend build plan — El Forkan admin SPA
 
-Companion to `backend/agent/build-plan.md`. Written after reviewing the
-Claude Design handoff bundle in `frontend/el-forkan-design-system/`.
+Companion to [`agent/build-plan.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/build-plan.md) in the backend repo. Written after reviewing the
+Claude Design handoff bundle (see the note on it in [progress.md](progress.md)).
 
 Each phase has an **exit test** you can run by hand before moving on. Do not
 start a phase until the previous one's exit test passes.
@@ -21,16 +21,18 @@ Read in this order:
 | [progress.md](progress.md) | What happened in each phase, and what is still open |
 | [memory.md](memory.md) | Gotchas that already cost time — read before debugging |
 | this file | What to build next, with a hand-runnable exit test per phase |
-| `../app/README.md` | How to run it, and the conventions the tooling enforces |
+| [`../README.md`](../README.md) | How to run it, and the conventions the tooling enforces |
 
-Then, to get it running — two terminals, both starting at the repo root:
+Then, to get it running. The API is a **separate repository**
+([el-forkan-institute](https://github.com/Ahmed-ElKashif/el-forkan-institute)) and owns the database, so it goes up first.
 
 ```bash
-# terminal 1 — the API
-cd backend && npm install && npx prisma generate && npm run start:dev
+# terminal 1 — the API, cloned as a sibling of this repo
+git clone https://github.com/Ahmed-ElKashif/el-forkan-institute.git
+cd el-forkan-institute && npm install && npx prisma generate && npm run start:dev
 
-# terminal 2 — the SPA
-cd frontend/app && npm install && cp .env.example .env && npm run dev
+# terminal 2 — this repo
+npm install && cp .env.example .env && npm run dev
 ```
 
 Sign in as `headteacher` / `ChangeMe123!`. **The login throttle is five
@@ -107,7 +109,7 @@ existing primitives do not cover. They land in F6.
 
 ### F0a — Vendor the design system  ✅ DONE
 
-Create `frontend/app/` (Vite + React + TS + **Tailwind v4**), its own git repo.
+Create this repo (Vite + React + TS + **Tailwind v4**), its own git repo.
 
 - Copy the token CSS in unchanged as `src/styles/tokens.css`, then map it into
   Tailwind's namespaces with `@theme inline` in `src/styles/theme.css` so the
@@ -219,7 +221,7 @@ Two Render services, backend and frontend, plus the domain decision.
 
 This sits here, before any real screen, on purpose. `SameSite=Strict` plus
 separate Render subdomains means the refresh cookie is **silently dropped** —
-login appears to work and every refresh fails. `backend/agent/memory.md`
+login appears to work and every refresh fails. [`agent/memory.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/memory.md) in the backend repo
 already flags it. Discovering it now costs an afternoon; discovering it after
 F5 costs a week.
 
@@ -300,7 +302,7 @@ The one place gold leads.
    audit log.
 4. Revoking demands a reason; re-issuing afterwards succeeds.
 5. **Blocked on the head teacher:** the printed wording is still undecided
-   (`backend/agent/progress.md`, "Still open" #2). Ask before building the sheet.
+   ([`agent/progress.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/progress.md) in the backend repo, "Still open" #2). Ask before building the sheet.
 
 ---
 
@@ -310,7 +312,7 @@ Promotion preview to confirm, WhatsApp console, curriculum builder, timetable
 editor with clash detection, foundation CRUD, audit viewer.
 
 **Exit test** — the whole-system acceptance already written in
-`backend/agent/build-plan.md`: import the real 1447 workbooks, build 1448,
+[`agent/build-plan.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/build-plan.md) in the backend repo: import the real 1447 workbooks, build 1448,
 enrol, generate sessions, take attendance, run exams, enter scores, run
 promotion preview to confirm, issue a certificate, print a roster — as the head
 teacher, in Arabic, RTL. Then as a teacher: every head-teacher action 403s.
@@ -333,7 +335,7 @@ teacher, in Arabic, RTL. Then as a teacher: every head-teacher action 403s.
 
 ## Two answers needed from the head teacher
 
-Both are already logged as open in `backend/agent/progress.md`; both block
+Both are already logged as open in [`agent/progress.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/progress.md) in the backend repo; both block
 design work, not code:
 
 1. Certificate printed wording and layout (blocks F5).

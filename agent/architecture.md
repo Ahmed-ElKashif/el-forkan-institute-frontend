@@ -1,6 +1,6 @@
 # Architecture — module map & why
 
-Living document, mirroring `backend/agent/architecture.md`. Each structural
+Living document, mirroring [`agent/architecture.md`](https://github.com/Ahmed-ElKashif/el-forkan-institute/blob/main/agent/architecture.md) in the backend repo. Each structural
 choice is tied to the reason it was made, so a future session can tell a
 deliberate decision from an accident.
 
@@ -10,7 +10,7 @@ Companion docs: [build-plan.md](build-plan.md) (what to build next),
 ## Current module map (after F0b)
 
 ```
-frontend/app/src/
+src/
 ├─ features/            one folder per domain area; the unit of work
 │  ├─ auth/             model · errors · ports · service · gateway · token store
 │  │                    provider · route guard · login screen · index.ts
