@@ -1,0 +1,152 @@
+@import 'tailwindcss';
+
+/* Self-hosted IBM Plex Sans Arabic — vendored by @fontsource and bundled by
+   Vite, so nothing is fetched from a CDN at runtime. The `latin` subset is not
+   optional: every numeral in this product is a Latin digit. */
+@import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-500.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-600.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-700.css';
+@import '@fontsource/ibm-plex-sans-arabic/latin-400.css';
+@import '@fontsource/ibm-plex-sans-arabic/latin-500.css';
+@import '@fontsource/ibm-plex-sans-arabic/latin-600.css';
+@import '@fontsource/ibm-plex-sans-arabic/latin-700.css';
+
+@import './tokens.css';
+@import './theme.css';
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg-app);
+    color: var(--text-body);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    line-height: var(--lh-body);
+    font-weight: 400;
+    letter-spacing: var(--tracking);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0;
+    color: var(--text-heading);
+    line-height: var(--lh-heading);
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0 0 1rem;
+  }
+
+  a {
+    color: var(--text-link);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--text-link-hover);
+    text-decoration: underline;
+  }
+
+  /* This app is driven by keyboard for grid entry — a missing focus ring is a
+     defect, so it is defined once, globally, rather than per component. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Latin tabular digits. Every score, serial, count and date. */
+  .ef-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .ef-longform {
+    font-family: var(--font-longform);
+    line-height: var(--lh-longform);
+  }
+
+  .ef-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  [dir='rtl'] .ef-mirror {
+    transform: scaleX(-1);
+  }
+}
+
+@keyframes ef-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   A4 portrait RTL. Roster sheets, result sheets and certificates are real
+   deliverables, so every state fill becomes an outlined black glyph — nothing
+   in this product may depend on toner.
+--------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  :root {
+    --bg-app: var(--print-paper);
+  }
+
+  body {
+    background: var(--print-paper);
+    color: var(--print-ink);
+    font-size: 11pt;
+  }
+
+  .ef-no-print {
+    display: none !important;
+  }
+
+  .ef-print-sheet {
+    background: var(--paper);
+    border: none;
+  }
+
+  .ef-print-rule {
+    border-color: var(--gold-200);
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  td,
+  th {
+    break-inside: avoid;
+  }
+
+  .ef-state {
+    border: 1px solid var(--print-ink);
+    background: transparent !important;
+    color: var(--print-ink) !important;
+  }
+}

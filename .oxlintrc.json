@@ -1,0 +1,48 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "error",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "**/ds/core/*",
+              "**/ds/forms/*",
+              "**/ds/data/*",
+              "**/ds/feedback/*",
+              "**/ds/navigation/*",
+              "**/ds/brand/*"
+            ],
+            "message": "Import design-system components from 'src/ds' (the barrel), not component internals."
+          },
+          {
+            "group": [
+              "**/features/*/*"
+            ],
+            "message": "Import a feature through its barrel (e.g. '../features/auth'), not its internals. What a feature does not export is private to it."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

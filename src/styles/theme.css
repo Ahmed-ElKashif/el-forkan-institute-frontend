@@ -1,0 +1,140 @@
+/* ---------------------------------------------------------------------------
+   Tailwind theme mapping.
+
+   `@theme inline` makes Tailwind emit `var(--token)` in its utilities instead
+   of copying literal values. That keeps tokens.css as the one source of truth:
+   `bg-brand` resolves to `var(--brand)` at runtime, so the print stylesheet's
+   override of `--bg-app` still works, and changing a hex in tokens.css changes
+   every utility without a rebuild of this file.
+
+   NOTE ON THE TYPE SCALE. The design system names its sizes 2xs..3xl; Tailwind
+   names the same eight values xs..4xl. The numbers are identical, so this file
+   deliberately keeps Tailwind's native names — a developer typing `text-sm`
+   gets what every other Tailwind project gives them. Mapping:
+     ds 2xs .75  = tw xs      ds lg  1.25  = tw xl
+     ds xs  .875 = tw sm      ds xl  1.5   = tw 2xl
+     ds sm  1    = tw base    ds 2xl 1.875 = tw 3xl
+     ds md  1.125= tw lg      ds 3xl 2.25  = tw 4xl
+
+   Spacing needs no mapping at all: the design system's 4·8·12·16·24·32·48·64
+   scale is exactly Tailwind's default 4px scale (p-1 … p-16).
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  /* --- Brand ramps ------------------------------------------------------ */
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-300: var(--teal-300);
+  --color-teal-400: var(--teal-400);
+  --color-teal-500: var(--teal-500);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-teal-800: var(--teal-800);
+  --color-teal-900: var(--teal-900);
+
+  --color-gold-50: var(--gold-50);
+  --color-gold-100: var(--gold-100);
+  --color-gold-200: var(--gold-200);
+  --color-gold-300: var(--gold-300);
+  --color-gold-400: var(--gold-400);
+  --color-gold-500: var(--gold-500);
+  --color-gold-600: var(--gold-600);
+  --color-gold-700: var(--gold-700);
+  --color-gold-800: var(--gold-800);
+  --color-gold-900: var(--gold-900);
+
+  /* --- Neutrals. ink-900/700/500/400 are heading/body/muted/faint. ------- */
+  --color-ink-900: var(--ink-900);
+  --color-ink-700: var(--ink-700);
+  --color-ink-500: var(--ink-500);
+  --color-ink-400: var(--ink-400);
+  --color-line-300: var(--line-300);
+  --color-line-200: var(--line-200);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-paper: var(--paper);
+
+  /* --- Semantic --------------------------------------------------------- */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-pressed: var(--danger-pressed);
+  --color-info: var(--info);
+  --color-success-bg: var(--success-bg);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger-bg: var(--danger-bg);
+  --color-info-bg: var(--info-bg);
+  --color-success-line: var(--success-line);
+  --color-danger-line: var(--danger-line);
+  --color-info-line: var(--info-line);
+
+  /* --- Attendance states ------------------------------------------------ */
+  --color-att-present-bg: var(--att-present-bg);
+  --color-att-present-fg: var(--att-present-fg);
+  --color-att-absent-bg: var(--att-absent-bg);
+  --color-att-absent-fg: var(--att-absent-fg);
+  --color-att-excused-bg: var(--att-excused-bg);
+  --color-att-excused-fg: var(--att-excused-fg);
+  --color-att-late-bg: var(--att-late-bg);
+  --color-att-late-fg: var(--att-late-fg);
+
+  /* --- Roles ------------------------------------------------------------ */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-pressed: var(--brand-pressed);
+  --color-brand-disabled: var(--brand-disabled);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
+
+  --color-app: var(--bg-app);
+  --color-nav: var(--surface-nav);
+  --color-tint: var(--surface-tint);
+  --color-ceremony: var(--surface-ceremony);
+
+  --color-on-brand: var(--text-on-brand);
+  --color-on-nav: var(--text-on-nav);
+  --color-brand-text: var(--text-brand);
+  --color-accent-text: var(--text-accent);
+  --color-link: var(--text-link);
+  --color-link-hover: var(--text-link-hover);
+
+  --color-subtle: var(--border-subtle);
+  --color-default: var(--border-default);
+  --color-strong: var(--border-strong);
+  --color-ceremony-line: var(--border-ceremony);
+  --color-focus: var(--focus-ring);
+
+  --color-scrim: var(--scrim);
+  --color-nav-idle: var(--nav-fg-idle);
+  --color-nav-dim: var(--nav-fg-dim);
+  --color-nav-group: var(--nav-fg-group);
+  --color-nav-line: var(--nav-line);
+  --color-nav-badge: var(--nav-badge);
+
+  /* --- Type ------------------------------------------------------------- */
+  --font-sans: var(--font-ui);
+  --font-longform: var(--font-longform);
+
+  --leading-body: var(--lh-body);
+  --leading-heading: var(--lh-heading);
+  --leading-tight: var(--lh-tight);
+  --leading-longform: var(--lh-longform);
+
+  /* --- Radii. Overrides Tailwind's defaults with the system's own. ------- */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  /* --- Elevation and motion --------------------------------------------- */
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-modal: var(--shadow-modal);
+  --shadow-rail: var(--shadow-rail);
+
+  --ease-standard: var(--ease-standard);
+  --ease-out: var(--ease-out);
+}
