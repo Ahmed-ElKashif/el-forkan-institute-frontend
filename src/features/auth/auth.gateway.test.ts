@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { AuthGateway } from './auth.gateway';
 import {
   AccountInactiveError,
-  AccountLockedError,
   InvalidCredentialsError,
   NetworkError,
   SessionExpiredError,
@@ -74,15 +73,15 @@ describe('error translation', () => {
     await expect(new AuthGateway(http).refresh()).rejects.toBeInstanceOf(SessionExpiredError);
   });
 
-  it.each([
-    ['Account temporarily locked. Try again later.', AccountLockedError],
-    ['Account is inactive', AccountInactiveError],
-  ])('separates the two meanings of 403 by message: %s', async (message, expected) => {
-    const http = clientRejecting(new HttpError(403, { message }));
+  /* On login a 403 means one thing: a deactivated account. A locked account is
+     answered with a generic 401, not a 403 (the API refuses to make lockout an
+     enumeration oracle), so there is no lockout case to separate here. */
+  it('reads a 403 "inactive" on login as a deactivated account', async () => {
+    const http = clientRejecting(new HttpError(403, { message: 'Account is inactive' }));
 
     await expect(
       new AuthGateway(http).login({ username: 'a', password: 'b' }),
-    ).rejects.toBeInstanceOf(expected);
+    ).rejects.toBeInstanceOf(AccountInactiveError);
   });
 
   /* Confirmed against the running API: a refresh with no valid cookie is

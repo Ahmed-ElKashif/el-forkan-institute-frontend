@@ -16,7 +16,12 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     coverage: {
       provider: 'v8',
-      include: ['src/core/**', 'src/infra/**'],
+      // The app's own source. `ds/` (the vendored design system) and `dev/`
+      // (the gallery) are reference material with no unit tests by design, so
+      // measuring them would only report noise. The `core/`+`infra/` layers this
+      // once named were dissolved into features/ + shared/ during the F0b
+      // restructure.
+      include: ['src/features/**', 'src/shared/**', 'src/app/**'],
     },
   },
 });

@@ -18,7 +18,7 @@ certificates and WhatsApp reminders.
 ![Tailwind](https://img.shields.io/badge/Tailwind-v4-084F47?style=for-the-badge&logo=tailwindcss&logoColor=white)
 
 ![RTL](https://img.shields.io/badge/RTL-عربي-C5852D?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-28_passing-C5852D?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-35_passing-C5852D?style=for-the-badge)
 ![Components](https://img.shields.io/badge/design_system-40_components-A76D24?style=for-the-badge)
 
 </div>
@@ -37,7 +37,7 @@ certificates and WhatsApp reminders.
 
 `NestJS` · `Prisma` · `Postgres`
 
-115 REST routes, 383 tests
+117 REST routes, 396 tests
 
 </td>
 <td align="center" width="50%">
@@ -58,9 +58,13 @@ certificates and WhatsApp reminders.
 
 ## Status
 
-**F0a and F0b are done.** The design system is vendored, and sign-in, session
-refresh and sign-out work against the live API. The app frame and role-scoped
-navigation are F0c; the real screens start at F1.
+**F0a–F0c and F1 are done.** The design system is vendored; sign-in, session
+refresh and sign-out work against the live API; every signed-in route sits
+inside the role-scoped frame — a sidebar genuinely shorter for a teacher, and
+route-level 403 gating that mirrors the API. **F1** adds the first data screens
+— the dashboard and the students roster — over **RTK Query**, which caches and
+dedups reads while still running through the auth-aware transport. F0d (deploy
+and the cookie decision) is prepared and account-bound. F2 (attendance) is next.
 
 The full plan — phase by phase, with a hand-runnable exit test for each — is in
 [`agent/build-plan.md`](agent/build-plan.md), alongside the living
@@ -98,7 +102,7 @@ already points at it.
 | Command | Does |
 |---|---|
 | `npm run dev` | Vite dev server on :5173 |
-| `npm test` | Vitest — 28 tests |
+| `npm test` | Vitest — 35 tests |
 | `npm run lint` | oxlint + design-token check |
 | `npm run typecheck` | `tsc -b`, strict |
 | `npm run build` | typecheck + production build |
@@ -114,15 +118,19 @@ gateway, React bindings and screens in one folder.
 ```
 src/
   features/
-    auth/            model · errors · service · gateway · token store
-                     provider · route guard · login screen · index.ts
-    home/
+    auth/            model · errors · service · gateway · token store · provider
+                     route guard · role guard + 403 · login screen · index.ts
+    dashboard/       model · RTK Query endpoints · DashboardPage
+    students/        model · RTK Query endpoints · StudentsPage
   shared/            what more than one feature needs
     http/            HttpClient port + FetchHttpClient + errors
+    api/             RTK Query — baseQuery over HttpClient · store · pagination
+    react/           useDebouncedValue
     di/              composition root and its React provider
     i18n/            i18next + ar.json
   ds/                design system — 40 components
   app/               App.tsx — providers and the route table
+    shell/           the signed-in frame + navigation registry
   dev/               DesignSystem gallery, dev only
   test/              the one shared test double
 ```
@@ -177,7 +185,7 @@ program's edge rather than inside a component.
   replays the original request; if the refresh itself fails the original 401
   stands.
 - **Errors are domain types, not status codes** — `InvalidCredentialsError`,
-  `AccountLockedError`, `TooManyAttemptsError`, `SessionExpiredError` and so on,
+  `AccountInactiveError`, `TooManyAttemptsError`, `SessionExpiredError` and so on,
   each carrying a `messageKey` into `ar.json`.
 
 ---
@@ -284,7 +292,7 @@ Escape and scrim-click close.
 
 <div align="center">
 
-**Status:** F0a + F0b complete · design system vendored · session working.<br/>
+**Status:** F0a–F0c + F1 complete · dashboard and students over RTK Query · session + role-scoped frame working.<br/>
 [See the backend repo →](https://github.com/Ahmed-ElKashif/el-forkan-institute)
 
 <sub>دورات الفرقان التثقيفية · El Forkan Institute</sub>

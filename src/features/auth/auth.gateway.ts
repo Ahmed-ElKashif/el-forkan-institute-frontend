@@ -1,6 +1,5 @@
 import {
   AccountInactiveError,
-  AccountLockedError,
   InvalidCredentialsError,
   NetworkError,
   SessionExpiredError,
@@ -111,9 +110,11 @@ type Context = 'credentials' | 'session';
 
 /** The single translation table from transport failure to domain meaning.
  *
- *  403 is genuinely ambiguous — it covers both a lockout and a deactivated
- *  account, distinguished only by the message. That match is fragile, so an
- *  unrecognised 403 falls through to `UnexpectedAuthError` rather than guessing. */
+ *  On login a 403 now means exactly one thing — a deactivated account. A locked
+ *  account is answered with a generic 401 (F9), never a 403, so there is no
+ *  lockout case to disambiguate. On refresh a 403 is the csrf-csrf rejection.
+ *  Any 403 that matches neither falls through to `UnexpectedAuthError` rather
+ *  than guessing. */
 function toAuthError(error: unknown, context: Context): Error {
   if (error instanceof NetworkFailureError) return new NetworkError();
   if (!(error instanceof HttpError)) {
@@ -127,7 +128,6 @@ function toAuthError(error: unknown, context: Context): Error {
         : new SessionExpiredError();
     case 403: {
       const detail = error.detail.toLowerCase();
-      if (detail.includes('locked')) return new AccountLockedError();
       if (detail.includes('inactive')) return new AccountInactiveError();
       /* Verified against the running API: refreshing without a valid refresh
          cookie answers 403 "invalid csrf token", not 401 — csrf-csrf rejects

@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1788088141135" clover="3.2.0">
+  <project timestamp="1788088141135" name="All files">
+    <metrics statements="225" coveredstatements="202" conditionals="91" coveredconditionals="64" methods="76" coveredmethods="66" elements="392" coveredelements="332" complexity="0" loc="225" ncloc="225" packages="6" files="25" classes="25"/>
+    <package name="app">
+      <metrics statements="5" coveredstatements="5" conditionals="2" coveredconditionals="1" methods="5" coveredmethods="5"/>
+      <file name="App.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\app\App.tsx">
+        <metrics statements="5" coveredstatements="5" conditionals="2" coveredconditionals="1" methods="5" coveredmethods="5"/>
+        <line num="21" count="28" type="stmt"/>
+        <line num="22" count="28" type="stmt"/>
+        <line num="24" count="4" type="stmt"/>
+        <line num="36" count="16" type="stmt"/>
+        <line num="40" count="12" type="stmt"/>
+      </file>
+    </package>
+    <package name="app.shell">
+      <metrics statements="24" coveredstatements="18" conditionals="10" coveredconditionals="5" methods="9" coveredmethods="5"/>
+      <file name="AppShell.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\app\shell\AppShell.tsx">
+        <metrics statements="15" coveredstatements="9" conditionals="6" coveredconditionals="2" methods="5" coveredmethods="2"/>
+        <line num="16" count="3" type="stmt"/>
+        <line num="17" count="3" type="stmt"/>
+        <line num="18" count="3" type="stmt"/>
+        <line num="19" count="3" type="stmt"/>
+        <line num="20" count="3" type="stmt"/>
+        <line num="22" count="3" type="stmt"/>
+        <line num="25" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="27" count="21" type="stmt"/>
+        <line num="36" count="0" type="stmt"/>
+        <line num="37" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="41" count="0" type="stmt"/>
+        <line num="42" count="0" type="stmt"/>
+        <line num="43" count="0" type="stmt"/>
+        <line num="45" count="0" type="stmt"/>
+        <line num="49" count="3" type="stmt"/>
+      </file>
+      <file name="SectionPlaceholder.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\app\shell\SectionPlaceholder.tsx">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="13" count="2" type="stmt"/>
+        <line num="14" count="2" type="stmt"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="17" count="2" type="stmt"/>
+      </file>
+      <file name="navigation.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\app\shell\navigation.ts">
+        <metrics statements="5" coveredstatements="5" conditionals="4" coveredconditionals="3" methods="3" coveredmethods="2"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="44" count="5" type="stmt"/>
+        <line num="45" count="35" type="cond" truecount="2" falsecount="0"/>
+        <line num="47" count="5" type="stmt"/>
+        <line num="48" count="5" type="cond" truecount="1" falsecount="1"/>
+      </file>
+    </package>
+    <package name="features.auth">
+      <metrics statements="135" coveredstatements="126" conditionals="45" coveredconditionals="35" methods="49" coveredmethods="45"/>
+      <file name="AuthProvider.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\AuthProvider.tsx">
+        <metrics statements="23" coveredstatements="19" conditionals="4" coveredconditionals="2" methods="8" coveredmethods="6"/>
+        <line num="13" count="11" type="stmt"/>
+        <line num="14" count="11" type="stmt"/>
+        <line num="15" count="11" type="stmt"/>
+        <line num="25" count="11" type="stmt"/>
+        <line num="26" count="4" type="stmt"/>
+        <line num="28" count="4" type="stmt"/>
+        <line num="30" count="0" type="stmt"/>
+        <line num="32" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="33" count="4" type="stmt"/>
+        <line num="34" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="37" count="4" type="stmt"/>
+        <line num="38" count="4" type="stmt"/>
+        <line num="42" count="11" type="stmt"/>
+        <line num="44" count="4" type="stmt"/>
+        <line num="45" count="3" type="stmt"/>
+        <line num="46" count="3" type="stmt"/>
+        <line num="51" count="11" type="stmt"/>
+        <line num="52" count="0" type="stmt"/>
+        <line num="53" count="0" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="57" count="11" type="stmt"/>
+        <line num="58" count="11" type="stmt"/>
+        <line num="62" count="11" type="stmt"/>
+      </file>
+      <file name="ForbiddenPage.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\ForbiddenPage.tsx">
+        <metrics statements="4" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="1"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="20" count="0" type="stmt"/>
+      </file>
+      <file name="LoginPage.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\LoginPage.tsx">
+        <metrics statements="22" coveredstatements="22" conditionals="8" coveredconditionals="7" methods="4" coveredmethods="4"/>
+        <line num="13" count="91" type="stmt"/>
+        <line num="14" count="91" type="stmt"/>
+        <line num="15" count="91" type="stmt"/>
+        <line num="16" count="91" type="stmt"/>
+        <line num="17" count="91" type="stmt"/>
+        <line num="19" count="91" type="stmt"/>
+        <line num="20" count="91" type="stmt"/>
+        <line num="21" count="91" type="stmt"/>
+        <line num="22" count="91" type="stmt"/>
+        <line num="24" count="91" type="cond" truecount="2" falsecount="0"/>
+        <line num="25" count="3" type="stmt"/>
+        <line num="26" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="30" count="4" type="stmt"/>
+        <line num="31" count="4" type="stmt"/>
+        <line num="32" count="4" type="stmt"/>
+        <line num="33" count="4" type="stmt"/>
+        <line num="34" count="4" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="38" count="4" type="stmt"/>
+        <line num="42" count="88" type="stmt"/>
+        <line num="70" count="38" type="stmt"/>
+        <line num="82" count="41" type="stmt"/>
+      </file>
+      <file name="ProtectedRoute.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\ProtectedRoute.tsx">
+        <metrics statements="8" coveredstatements="8" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="15" count="11" type="stmt"/>
+        <line num="16" count="11" type="stmt"/>
+        <line num="17" count="11" type="stmt"/>
+        <line num="19" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="20" count="4" type="stmt"/>
+        <line num="27" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="30" count="4" type="stmt"/>
+        <line num="33" count="3" type="stmt"/>
+      </file>
+      <file name="RequireRole.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\RequireRole.tsx">
+        <metrics statements="2" coveredstatements="2" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="18" count="1" type="cond" truecount="1" falsecount="1"/>
+      </file>
+      <file name="auth-context.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth-context.ts">
+        <metrics statements="5" coveredstatements="4" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="19" count="106" type="stmt"/>
+        <line num="20" count="106" type="cond" truecount="1" falsecount="1"/>
+        <line num="21" count="0" type="stmt"/>
+        <line num="23" count="106" type="stmt"/>
+      </file>
+      <file name="auth-error-message.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth-error-message.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
+        <line num="9" count="1" type="cond" truecount="1" falsecount="1"/>
+      </file>
+      <file name="auth.errors.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth.errors.ts">
+        <metrics statements="17" coveredstatements="17" conditionals="1" coveredconditionals="1" methods="9" coveredmethods="9"/>
+        <line num="16" count="18" type="stmt"/>
+        <line num="17" count="18" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="41" count="1" type="stmt"/>
+        <line num="43" count="1" type="stmt"/>
+        <line num="51" count="2" type="stmt"/>
+        <line num="53" count="2" type="stmt"/>
+        <line num="60" count="8" type="stmt"/>
+        <line num="62" count="8" type="stmt"/>
+        <line num="68" count="3" type="stmt"/>
+        <line num="70" count="3" type="stmt"/>
+        <line num="77" count="2" type="stmt"/>
+        <line num="79" count="2" type="stmt"/>
+        <line num="84" count="1" type="stmt"/>
+      </file>
+      <file name="auth.gateway.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth.gateway.ts">
+        <metrics statements="28" coveredstatements="26" conditionals="20" coveredconditionals="16" methods="11" coveredmethods="11"/>
+        <line num="17" count="3" type="stmt"/>
+        <line num="18" count="3" type="stmt"/>
+        <line num="35" count="22" type="stmt"/>
+        <line num="38" count="11" type="stmt"/>
+        <line num="39" count="11" type="stmt"/>
+        <line num="56" count="14" type="stmt"/>
+        <line num="57" count="14" type="stmt"/>
+        <line num="65" count="11" type="stmt"/>
+        <line num="74" count="5" type="stmt"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="90" count="2" type="stmt"/>
+        <line num="91" count="2" type="stmt"/>
+        <line num="96" count="28" type="stmt"/>
+        <line num="97" count="28" type="stmt"/>
+        <line num="99" count="18" type="stmt"/>
+        <line num="118" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="119" count="15" type="cond" truecount="1" falsecount="1"/>
+        <line num="120" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="123" count="15" type="cond" truecount="3" falsecount="1"/>
+        <line num="125" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="129" count="5" type="stmt"/>
+        <line num="130" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="131" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="136" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="137" count="2" type="stmt"/>
+        <line num="140" count="2" type="stmt"/>
+        <line num="142" count="0" type="stmt"/>
+      </file>
+      <file name="auth.model.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth.model.ts">
+        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      </file>
+      <file name="auth.ports.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth.ports.ts">
+        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      </file>
+      <file name="auth.service.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\auth.service.ts">
+        <metrics statements="21" coveredstatements="20" conditionals="2" coveredconditionals="2" methods="8" coveredmethods="7"/>
+        <line num="18" count="11" type="stmt"/>
+        <line num="21" count="11" type="stmt"/>
+        <line num="22" count="11" type="stmt"/>
+        <line num="26" count="5" type="stmt"/>
+        <line num="27" count="4" type="stmt"/>
+        <line num="28" count="4" type="stmt"/>
+        <line num="39" count="7" type="stmt"/>
+        <line num="40" count="7" type="stmt"/>
+        <line num="42" count="6" type="stmt"/>
+        <line num="43" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="1" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="52" count="11" type="stmt"/>
+        <line num="55" count="3" type="stmt"/>
+        <line num="56" count="3" type="stmt"/>
+        <line num="59" count="10" type="stmt"/>
+        <line num="62" count="11" type="stmt"/>
+        <line num="68" count="1" type="stmt"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="71" count="1" type="stmt"/>
+        <line num="76" count="0" type="stmt"/>
+      </file>
+      <file name="index.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\index.ts">
+        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      </file>
+      <file name="memory-token.store.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\features\auth\memory-token.store.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="3"/>
+        <line num="11" count="11" type="stmt"/>
+        <line num="14" count="5" type="stmt"/>
+        <line num="18" count="8" type="stmt"/>
+        <line num="22" count="7" type="stmt"/>
+      </file>
+    </package>
+    <package name="shared.di">
+      <metrics statements="11" coveredstatements="5" conditionals="4" coveredconditionals="1" methods="4" coveredmethods="2"/>
+      <file name="DiProvider.tsx" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\di\DiProvider.tsx">
+        <metrics statements="6" coveredstatements="5" conditionals="2" coveredconditionals="1" methods="2" coveredmethods="2"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="15" count="4" type="stmt"/>
+        <line num="19" count="11" type="stmt"/>
+        <line num="20" count="11" type="cond" truecount="1" falsecount="1"/>
+        <line num="21" count="0" type="stmt"/>
+        <line num="23" count="11" type="stmt"/>
+      </file>
+      <file name="container.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\di\container.ts">
+        <metrics statements="5" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
+        <line num="28" count="0" type="stmt"/>
+        <line num="35" count="0" type="stmt"/>
+        <line num="37" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="40" count="0" type="stmt"/>
+        <line num="42" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="shared.http">
+      <metrics statements="42" coveredstatements="40" conditionals="30" coveredconditionals="22" methods="9" coveredmethods="9"/>
+      <file name="fetch-http-client.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\http\fetch-http-client.ts">
+        <metrics statements="32" coveredstatements="30" conditionals="25" coveredconditionals="20" methods="6" coveredmethods="6"/>
+        <line num="19" count="8" type="stmt"/>
+        <line num="22" count="8" type="stmt"/>
+        <line num="24" count="7" type="cond" truecount="5" falsecount="0"/>
+        <line num="25" count="2" type="stmt"/>
+        <line num="26" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="29" count="6" type="stmt"/>
+        <line num="33" count="9" type="stmt"/>
+        <line num="35" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="36" count="0" type="stmt"/>
+        <line num="39" count="9" type="cond" truecount="2" falsecount="0"/>
+        <line num="40" count="8" type="stmt"/>
+        <line num="41" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="9" type="stmt"/>
+        <line num="45" count="9" type="stmt"/>
+        <line num="52" count="1" type="stmt"/>
+        <line num="60" count="2" type="stmt"/>
+        <line num="61" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="63" count="2" type="stmt"/>
+        <line num="64" count="2" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="76" count="7" type="stmt"/>
+        <line num="77" count="7" type="stmt"/>
+        <line num="79" count="0" type="stmt"/>
+        <line num="82" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="85" count="3" type="stmt"/>
+        <line num="89" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="93" count="3" type="stmt"/>
+        <line num="98" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="99" count="3" type="stmt"/>
+        <line num="100" count="3" type="stmt"/>
+        <line num="102" count="1" type="stmt"/>
+      </file>
+      <file name="http.errors.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\http\http.errors.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="5" coveredconditionals="2" methods="3" coveredmethods="3"/>
+        <line num="19" count="18" type="stmt"/>
+        <line num="20" count="18" type="stmt"/>
+        <line num="22" count="18" type="stmt"/>
+        <line num="23" count="18" type="stmt"/>
+        <line num="30" count="7" type="stmt"/>
+        <line num="31" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="32" count="7" type="cond" truecount="1" falsecount="2"/>
+        <line num="39" count="4" type="stmt"/>
+        <line num="40" count="4" type="stmt"/>
+        <line num="41" count="4" type="stmt"/>
+      </file>
+      <file name="http.port.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\http\http.port.ts">
+        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      </file>
+    </package>
+    <package name="shared.i18n">
+      <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="ar.json" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\i18n\ar.json">
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="5" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+      </file>
+      <file name="index.ts" path="D:\El Kashif\External Work\El Forkan Institute\frontend\app\src\shared\i18n\index.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

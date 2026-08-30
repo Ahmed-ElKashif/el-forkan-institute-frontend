@@ -38,12 +38,19 @@ nor "token", so any substring match on the message misfiles it.
 The call site always knows which call it made. Do not replace this with message
 matching.
 
-## 403 on login is genuinely ambiguous
+## 403 on login means one thing only: a deactivated account
 
-It covers both a lockout (`Account temporarily locked. Try again later.`) and a
-deactivated account (`Account is inactive`), separated only by the message. That
-match *is* fragile, so an unrecognised 403 falls through to `UnexpectedAuthError`
-rather than guessing. Do not add a third guess without checking the API.
+Since the backend's 2026-08-30 security remediation (finding **F9**), a **locked
+account no longer returns 403** — it returns the same generic **401 "Invalid
+username or password"** as a wrong password, so lockout cannot be used to
+enumerate accounts. The lockout *mechanism* still exists (5 failed attempts still
+lock the row); the UI simply can no longer tell the user their account is locked,
+by design. The old `AccountLockedError` type, its `auth.errors.accountLocked`
+message and the `detail.includes('locked')` branch were **removed** — the path was
+unreachable. A 403 on login now maps solely to `AccountInactiveError`
+(`Account is inactive`, returned only *after* a correct password). Do not
+reintroduce a lockout error type without first confirming the API emits a 403 for
+it again. On refresh, a 403 is still the csrf-csrf rejection → `SessionExpiredError`.
 
 ## The login throttle will lock you out during development
 
@@ -138,5 +145,27 @@ These are enforced by tooling; breaking them fails `npm run lint` or `tsc`.
   `text-start`. Nothing uses `left`/`right`.
 - **Gold is ceremony only** — certificates, seals, graduation. `Button
   variant="ceremony"` exists so misuse is visible in review.
-- **`RoleGate` hides, it does not secure.** Authorisation is the API's job; 54 of
-  its 115 routes enforce the head-teacher rule server-side.
+- **`RoleGate` hides, it does not secure.** Authorisation is the API's job; the
+  head-teacher-only routes enforce the rule server-side.
+
+## RTK Query runs through `FetchHttpClient`, not around it (F1)
+
+The data layer is RTK Query, but its `baseQuery` (`shared/api/baseQuery.ts`)
+does **not** fetch — it calls `extra.http.request(...)`, i.e. the one
+`FetchHttpClient` the container built. That client is handed to every thunk as
+its `extra` argument in `makeStore(http)`. Do **not** switch to
+`fetchBaseQuery` or a module-singleton client: that would bypass the token
+attach, the single-flight refresh and the one-shot 401 replay, and the session
+would silently stop recovering. The store is created in `App.tsx` from
+`container.http`; a test builds its own store from a `stubHttpClient`.
+
+## A list endpoint's query string lives in `path`, and `toQueryString` sorts it
+
+`HttpClient` has no params channel, so query params go into the endpoint's
+`path`. Build them with `toQueryString` (`shared/api/pagination.ts`), which
+**sorts keys and drops empties** — so the same query always yields the same URL,
+which is both RTK Query's cache key and the test stub's route key. In a test,
+build the expected stub key with the *same* helper
+(``\`GET /students?${toQueryString({ page, pageSize, search })}\```) rather than
+hand-writing it — `URLSearchParams` percent-encodes Arabic search terms, and
+transcribing that by hand is how the key silently fails to match.

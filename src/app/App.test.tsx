@@ -30,6 +30,14 @@ const USER: AuthUser = {
   isActive: true,
 };
 
+const TEACHER: AuthUser = {
+  ...USER,
+  id: 'b2',
+  fullName: 'أحمد سالم',
+  username: 'teacher1',
+  role: 'teacher',
+};
+
 /* No refresh cookie, so the boot-time restore finds no session and the app
    lands on the sign-in screen — the state a real first visit starts from. */
 const NO_SESSION: StubRoutes = {
@@ -39,6 +47,19 @@ const NO_SESSION: StubRoutes = {
   },
   'POST /auth/login': { accessToken: 'access-1', user: USER },
   'GET /users/me': USER,
+  /* The signed-in landing page is the dashboard, which reads the current year
+     then its summary. Stubbed so these auth/routing tests land on a rendered
+     shell rather than a dashboard error state. */
+  'GET /academic-years?page=1&pageSize=1': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+  'GET /reports/summary?academicYearId=1': {
+    academicYearId: 1,
+    hijriYear: 1447,
+    students: { active: 0, withPhone: 0, phoneCoverage: 0 },
+    enrollments: 0,
+    sections: 0,
+    pendingCarries: 0,
+    certificatesIssued: 0,
+  },
 };
 
 function containerWith(routes: StubRoutes = {}) {
@@ -46,14 +67,29 @@ function containerWith(routes: StubRoutes = {}) {
   return { auth: new AuthService(new AuthGateway(http), new MemoryTokenStore()), http };
 }
 
+function containerAs(account: AuthUser) {
+  return containerWith({ 'POST /auth/login': { accessToken: 'access-1', user: account } });
+}
+
+async function signInAs(account: AuthUser, password = 'ChangeMe123!') {
+  const ui = userEvent.setup();
+  await ui.type(await screen.findByLabelText(/اسم المستخدم/), account.username);
+  await ui.type(screen.getByLabelText(/كلمة المرور/), password);
+  await ui.click(screen.getByRole('button', { name: /تسجيل الدخول/ }));
+}
+
 /* Vitest runs without globals, so RTL's automatic cleanup never registers
-   itself and renders would otherwise pile up across tests. */
-afterEach(cleanup);
+   itself and renders would otherwise pile up across tests. The URL is reset
+   because one test below starts the app at a deep link. */
+afterEach(() => {
+  cleanup();
+  window.history.pushState({}, '', '/');
+});
 
 describe('App', () => {
   it('signs in with a username and lands on the signed-in page', async () => {
     const { auth, http } = containerWith();
-    render(<App container={{ auth }} />);
+    render(<App container={{ auth, http }} />);
 
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText(/اسم المستخدم/), 'headteacher');
@@ -69,12 +105,12 @@ describe('App', () => {
   });
 
   it('reports a throttled sign-in as a throttle, not as a bad password', async () => {
-    const { auth } = containerWith({
+    const { auth, http } = containerWith({
       'POST /auth/login': () => {
         throw new HttpError(429, { message: 'ThrottlerException: Too Many Requests' });
       },
     });
-    render(<App container={{ auth }} />);
+    render(<App container={{ auth, http }} />);
 
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText(/اسم المستخدم/), 'headteacher');
@@ -82,5 +118,32 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /تسجيل الدخول/ }));
 
     expect(await screen.findByText(/خمس محاولات في الدقيقة/)).toBeDefined();
+  });
+
+  it("omits the head-teacher-only sections from a teacher's sidebar", async () => {
+    const { auth, http } = containerAs(TEACHER);
+    render(<App container={{ auth, http }} />);
+
+    await signInAs(TEACHER);
+    /* Landed inside the shell — the sign-out control only exists there. */
+    expect(await screen.findByRole('button', { name: /تسجيل الخروج/ })).toBeDefined();
+
+    /* Shared sections stay; the three head-teacher-only ones are gone entirely,
+       not rendered disabled. */
+    expect(screen.getByText('الطلاب')).toBeDefined();
+    expect(screen.queryByText('الاستيراد')).toBeNull();
+    expect(screen.queryByText('الشهادات')).toBeNull();
+    expect(screen.queryByText('سجل المراجعة')).toBeNull();
+  });
+
+  it('shows a teacher a 403 when they open a head-teacher-only URL directly', async () => {
+    window.history.pushState({}, '', '/imports');
+    const { auth, http } = containerAs(TEACHER);
+    render(<App container={{ auth, http }} />);
+
+    /* The deep link bounced to login; signing in sends the teacher back to it,
+       where the route guard refuses the page rather than rendering it. */
+    await signInAs(TEACHER);
+    expect(await screen.findByText(/لا تملك صلاحية الوصول/)).toBeDefined();
   });
 });

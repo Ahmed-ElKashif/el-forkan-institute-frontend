@@ -1,5 +1,6 @@
 import { AuthGateway, AuthService, MemoryTokenStore } from '../../features/auth';
 import { FetchHttpClient } from '../http/fetch-http-client';
+import type { HttpClient } from '../http/http.port';
 
 /* ---------------------------------------------------------------------------
    Composition root.
@@ -18,6 +19,10 @@ import { FetchHttpClient } from '../http/fetch-http-client';
  *  service here is a visible decision, not a side effect of an import. */
 export interface AppContainer {
   readonly auth: AuthService;
+  /** The one transport, exposed so the RTK Query store's `baseQuery` runs
+   *  through the same client — same token attach, same 401 replay. Data
+   *  features reach it through RTK Query hooks, never this reference directly. */
+  readonly http: HttpClient;
 }
 
 export interface ContainerOptions {
@@ -39,5 +44,5 @@ export function createContainer({ baseUrl }: ContainerOptions): AppContainer {
 
   auth = new AuthService(new AuthGateway(http), tokens);
 
-  return { auth };
+  return { auth, http };
 }
