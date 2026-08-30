@@ -7,25 +7,67 @@ deliberate decision from an accident.
 Companion docs: [build-plan.md](build-plan.md) (what to build next),
 [progress.md](progress.md) (what happened), [memory.md](memory.md) (gotchas).
 
-## Current module map (after F0b)
+## Current module map (after F1)
 
 ```
 src/
 ├─ features/            one folder per domain area; the unit of work
 │  ├─ auth/             model · errors · ports · service · gateway · token store
-│  │                    provider · route guard · login screen · index.ts
-│  └─ home/             placeholder page, replaced by the real shell in F0c
+│  │                    provider · route guard · role guard + 403 · login · index.ts
+│  ├─ dashboard/        model · api (injectEndpoints) · DashboardPage · index.ts
+│  └─ students/         model · api (injectEndpoints) · StudentsPage · index.ts
 ├─ shared/              only what more than one feature needs
 │  ├─ http/             HttpClient port · FetchHttpClient · HttpError
+│  ├─ api/              RTK Query: baseQuery (bridges HttpClient) · api · store · pagination
+│  ├─ react/            useDebouncedValue
 │  ├─ di/               container.ts (composition root) · DiProvider.tsx
 │  └─ i18n/             i18next init · ar.json
 ├─ ds/                  design system — 40 components + tokens (F0a)
-├─ app/                 App.tsx: providers and the route table
+├─ app/                 App.tsx: providers, the store, and the route table
+│  └─ shell/            AppShell (frame) · navigation registry · SectionPlaceholder
 ├─ dev/                 DesignSystem.tsx — the /ds gallery, dev only
 ├─ test/                stub-http-client.ts — the one shared test double
 ├─ styles/              tokens.css · theme.css · index.css
 └─ main.tsx             reads config, builds the graph, renders
 ```
+
+`features/*` gateways are of two kinds now, and both go through the same
+`HttpClient`: `auth/` uses a concrete `AuthGateway` (it needs domain-error
+translation and single-flight refresh); the data features use **RTK Query
+endpoints** injected into `shared/api`, because a read list wants caching,
+dedup and loading/error state, which the library owns. See "Data fetching"
+below.
+
+The `home` feature that F0b shipped was a placeholder to prove the session; F0c
+replaced it with `app/shell/` and it was deleted.
+
+## The app shell lives in `app/`, not a feature
+
+`app/shell/` holds the signed-in frame and the navigation registry. It sits with
+`App.tsx` rather than in a feature or in `shared/` on purpose: the registry
+knows every destination and which routes are gated, which is composition-level
+knowledge — the same knowledge the route table has. Keeping both in `app/` means
+the "knows about every feature" concern lives in one place, and `shared/` stays
+for things that are genuinely feature-agnostic.
+
+`navigation.ts` is the single source of truth for the sidebar, the page titles
+and the route table. `App.tsx` generates its routes from it and wraps the
+`headTeacherOnly` ones in `RequireRole`, so a destination cannot appear in the
+sidebar without its route being gated to the matching role — the two cannot
+drift apart.
+
+## Role gating — presentation over an enforced boundary
+
+`features/auth/RequireRole` renders a route's children only for the allowed role
+and shows the design system's `denied` `EmptyState` otherwise; it fails closed
+if no user is present. It reads the role from the same `useAuth()` the rest of
+the app uses — the user `restore()`/sign-in already loaded from `GET /users/me`.
+
+Authorisation logic stays inside the auth feature (like `ProtectedRoute`); the
+route table only decides *where* to apply it. This is presentation only: the API
+enforces the same rule server-side on 54 of its 115 routes, so a teacher's
+request is refused there regardless of what the client renders. The client gate
+spares the teacher a request that would 403 anyway.
 
 ## Why features, not layers
 
@@ -151,13 +193,36 @@ is exactly Tailwind's default 4px scale, and the type scale is numerically
 identical to Tailwind's — only the *names* are shifted one step, so Tailwind's
 own names are used and the mapping table lives in `theme.css`.
 
+## Data fetching — RTK Query over the one transport (F1)
+
+Adopted at F1, exactly as F0b planned. The retrofit worth fearing was the
+auth-aware transport, and that lives in `FetchHttpClient` — so RTK Query is a
+**cache on top of it, not a second way to reach the network**:
+
+- `shared/api/baseQuery.ts` is a custom `baseQuery` that calls
+  `extra.http.request(...)`. The `HttpClient` is handed to every thunk as its
+  `extra` argument in `shared/api/store.ts` (`makeStore(http)`), so the token
+  attach, the single-flight refresh and the one-shot 401 replay still apply and
+  there is no module singleton. It flattens `HttpError`/`NetworkFailureError`
+  into `{ status, detail }` the way `AuthGateway` flattens into domain errors.
+- One `createApi` (`shared/api/api.ts`); each feature adds endpoints with
+  `injectEndpoints` in its own folder, so this stays a per-feature concern and
+  the barrel rule still holds. `tagTypes` are the cross-feature invalidation
+  vocabulary; `providesTags`/`invalidatesTags` live with each endpoint. F1 is
+  read-only, so nothing invalidates yet.
+- Query strings live in the endpoint's `path` (`toQueryString`, sorted keys →
+  stable cache key and stable test-stub key), because `HttpClient` carries no
+  separate params channel.
+- The store is created once in `App.tsx` from `container.http` and provided
+  above the router. `container.http` is the only addition to the DI surface.
+
+Why RTK Query and not a hand-rolled hook: caching, request dedup, and
+mutation-driven invalidation are real complexity the mutation-heavy phases
+(attendance, scores, imports) lean on, and re-implementing them is exactly what
+rule 23 warns against. `auth/` keeps its concrete gateway — it needs domain
+errors and single-flight refresh, which are not caching concerns.
+
 ## What is deliberately absent
 
-- **RTK Query / Redux.** Deferred to F1. The retrofit worth fearing was the
-  auth-aware transport, and that now lives in `FetchHttpClient`, which already
-  refreshes and replays a 401. RTK Query becomes a thin cache whose `baseQuery`
-  delegates to that client, with tag types declared per endpoint as endpoints
-  appear. Installing Redux during F0b would have added a second data-access
-  paradigm to cache exactly one request (`/users/me`).
 - **A port per feature.** See the DI rule above.
 - **Component unit tests.** See [progress.md](progress.md) for the reasoning.

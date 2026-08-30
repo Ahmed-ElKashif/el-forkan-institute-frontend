@@ -1,0 +1,25 @@
+# Render Blueprint for the El Forkan admin SPA (a static site).
+# Import this repo as a Blueprint in Render, then set VITE_API_BASE_URL in the
+# dashboard to the deployed API's URL. Full runbook: DEPLOY.md (build plan F0d).
+services:
+  - type: web
+    runtime: static
+    name: el-forkan-app
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Baked into the bundle at build time, so it must be set before the build.
+      # The exact API origin (scheme + host, no trailing slash), e.g.
+      # https://el-forkan-api.onrender.com — must match the backend's CORS_ORIGIN
+      # in reverse.
+      - key: VITE_API_BASE_URL
+        sync: false
+    # The SPA owns its routes. Without this, a hard refresh or a direct visit to
+    # a client route (/students, /imports, …) asks Render for a file that does
+    # not exist and 404s. The rewrite serves index.html and lets React Router
+    # resolve the path.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

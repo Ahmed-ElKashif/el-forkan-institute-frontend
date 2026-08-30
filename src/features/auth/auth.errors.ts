@@ -27,16 +27,11 @@ export class InvalidCredentialsError extends AuthError {
   }
 }
 
-/** 403 with a lockout message — five failed attempts locks the account for
- *  fifteen minutes (MAX_FAILED_LOGINS in the API's AuthService). */
-export class AccountLockedError extends AuthError {
-  readonly messageKey = 'auth.errors.accountLocked';
-  constructor() {
-    super('Account temporarily locked');
-  }
-}
-
-/** 403 — the account exists and the password was right, but it is deactivated. */
+/** 403 — the account exists and the password was right, but it is deactivated.
+ *  The API returns this only *after* a correct password, so it is not an
+ *  enumeration oracle. A locked account is deliberately NOT distinguished: the
+ *  API answers a lockout with the same generic 401 as a wrong password (F9), so
+ *  there is no lockout error type here — the UI cannot and must not reveal it. */
 export class AccountInactiveError extends AuthError {
   readonly messageKey = 'auth.errors.accountInactive';
   constructor() {

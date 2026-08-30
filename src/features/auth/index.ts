@@ -11,6 +11,7 @@
 /* Screens and React bindings — consumed by the route table. */
 export { AuthProvider } from './AuthProvider';
 export { ProtectedRoute } from './ProtectedRoute';
+export { RequireRole } from './RequireRole';
 export { LoginPage } from './LoginPage';
 export { useAuth, type AuthContextValue, type AuthStatus } from './auth-context';
 
@@ -25,7 +26,6 @@ export type { AuthUser, Credentials, LoginResult, Role } from './auth.model';
 export {
   AuthError,
   AccountInactiveError,
-  AccountLockedError,
   InvalidCredentialsError,
   NetworkError,
   SessionExpiredError,

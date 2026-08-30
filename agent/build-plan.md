@@ -10,8 +10,13 @@ start a phase until the previous one's exit test passes.
 
 ## Start here (new session)
 
-**Status: F0a and F0b are done.** The app signs in against the live API,
-survives a reload, and signs out. **F0c is next**, but see the note under F0d.
+**Status: F0a, F0b and F0c are done; F0d is prepared in code and waiting on the
+deploy.** The app signs in against the live API, survives a reload, signs out,
+and wraps every signed-in route in the role-scoped frame (sidebar + header) with
+route-level 403 gating. The F0d cookie trap is fixed at the source and both
+Render blueprints exist — all that is left is provisioning the two services and
+running the exit test (see F0d and [`DEPLOY.md`](../DEPLOY.md)). **F1 is the next
+build phase.**
 
 Read in this order:
 
@@ -44,7 +49,7 @@ Before changing anything, confirm the baseline is green:
 npm run lint && npm run typecheck && npm test
 ```
 
-That should report 28 passing tests.
+That should report 35 passing tests.
 
 > **Note on structure.** F0b below was written before the code was reorganised.
 > It shipped a `core/ infra/ app/` layering, which was replaced in the same
@@ -202,20 +207,43 @@ no invitation to add a port per feature.
 
 ---
 
-### F0c — App frame and role gating
+### F0c — App frame and role gating  ✅ DONE
 
-`SideNav` + `TopBar` from the kit, `RoleGate` fed by `GET /users/me`.
+`SideNav` + `TopBar` from the kit, role gating fed by the signed-in user's role
+(from `GET /users/me`, already loaded by `restore()`/sign-in).
 
-**Exit test**
+- `app/shell/navigation.ts` — the one navigation registry. Each destination
+  carries its path, i18n label/group keys, icon, `headTeacherOnly` flag and the
+  phase that will replace its placeholder. The sidebar, the page titles **and**
+  the route table all read from it, so paths and role gating cannot drift.
+- `app/shell/AppShell.tsx` — the signed-in frame: role-scoped `SideNav`,
+  `TopBar` with the sign-out control, and the routed screen in an `<Outlet>`.
+  Rendered inside `ProtectedRoute`. Replaces the F0b placeholder `home` feature,
+  now deleted.
+- `app/shell/SectionPlaceholder.tsx` — one honest stand-in for the screens F1–F6
+  deliver. States what the section is and which phase builds it; no fake data.
+- `features/auth/RequireRole.tsx` + `ForbiddenPage.tsx` — route-level
+  authorisation. A gated route wraps its children in `RequireRole`; a teacher
+  gets the design system's `denied` `EmptyState`, in Arabic, fail-closed.
+- The `/ds` gallery is now dev-only (`import.meta.env.DEV`); verified absent from
+  the production bundle.
+
+**Exit test** — both pass, and both are now covered by integration tests in
+`app/src/app/App.test.tsx` (sign-in through the real DI seam, no fetch mocking):
 
 1. The teacher's sidebar is genuinely shorter — import, certificates and audit
-   are absent, not disabled.
+   are absent, not disabled. ✅
 2. Typing a head-teacher-only URL directly as a teacher lands on a real 403
-   screen in Arabic.
+   screen in Arabic. ✅
+
+**Verified:** lint, strict typecheck, production build all clean; 30 tests passed
+at F0c (was 28; +2 for role gating; later 29 after the backend-sync
+reconciliation removed one now-impossible auth-error case); `/ds` excluded from
+`dist/`; no third-party fetch hosts in the bundle.
 
 ---
 
-### F0d — Deploy the shell **(do not defer this)**
+### F0d — Deploy the shell **(do not defer this)**  ⏳ prepared, awaiting the deploy
 
 Two Render services, backend and frontend, plus the domain decision.
 
@@ -225,25 +253,58 @@ login appears to work and every refresh fails. [`agent/memory.md`](https://githu
 already flags it. Discovering it now costs an afternoon; discovering it after
 F5 costs a week.
 
-**Exit test** — on the deployed URL, not localhost: log in, wait out or force
-an access-token expiry, and confirm the session survives.
+**What is done in code** (everything that does not need a Render account):
+
+- The cookie trap is fixed at the source. Both auth cookies (refresh + CSRF) now
+  read `COOKIE_SAMESITE` through one shared helper in the backend
+  (`src/auth/cookie-security.ts`): default `strict`, set `none` for a cross-site
+  deploy, and `none` forces `Secure`. Covered by `cookie-security.spec.ts`
+  (backend now 389 tests / 30 suites).
+- A Render Blueprint in each repo: the backend repo's `render.yaml` (Node web
+  service, `/health` check, `COOKIE_SAMESITE=none`, secrets as `sync:false`) and
+  this repo's [`render.yaml`](../render.yaml) (static site, `dist`, and the
+  `/* → /index.html` rewrite that keeps deep links from 404ing).
+- The full runbook and the decision table are in [`DEPLOY.md`](../DEPLOY.md).
+
+**What remains (yours — needs the Render account):** provision the two services,
+set the secrets and the two cross-referencing URLs (`CORS_ORIGIN` ↔
+`VITE_API_BASE_URL`), and run the exit test.
+
+**Exit test** — on the deployed URL, not localhost: log in, force an
+access-token expiry (reload — the token is memory-only), confirm the session
+survives the cross-site refresh, and confirm a deep-link hard refresh loads.
+Full steps in [`DEPLOY.md`](../DEPLOY.md).
 
 ---
 
-### F1 — Read-only breadth
+### F1 — Read-only breadth  ✅ DONE (dashboard + students; sections → F2)
 
-Students list, sections list, dashboard. The cheapest proof that RTK Query,
-`DataTable` and real Arabic data work together.
+Students list and dashboard. The cheapest proof that RTK Query, `DataTable` and
+real Arabic data work together. **RTK Query landed here** as planned — a custom
+`baseQuery` over the existing `FetchHttpClient` (see architecture.md, "Data
+fetching"), so caching sits on top of the auth-aware transport, not beside it.
+
+**The sections list was deferred to F2**, deliberately: it has no home in the
+navigation registry and belongs beside attendance (the teaching group), which is
+what sections are read against. Building it now would orphan a URL-only route.
+The exit test below does not depend on it.
 
 **Import the real 1447 workbooks into the dev database first** — 96 students.
-Long Arabic names break layouts that look perfect with placeholder text.
+Long Arabic names break layouts that look perfect with placeholder text. (Run
+locally against the dev DB before a visual pass; the automated tests use
+representative long Arabic names.)
 
 **Exit test**
 
 1. Students list paginates and searches with real names, no RTL wrapping
-   breakage at 360px width.
-2. Dashboard numbers match what `/reports/summary` returns.
-3. Every number is Latin digits, tabular.
+   breakage at 360px width. ✅ (search is debounced; phone wrapped in `<bdi>`)
+2. Dashboard numbers match what `/reports/summary` returns. ✅ (rendered straight
+   from the scoped summary, no client re-computation)
+3. Every number is Latin digits, tabular. ✅ (`formatNumber` + `.ef-num`)
+
+**Verified:** lint, strict typecheck, production build all clean; **35 tests
+pass** (+6: 4 for the `baseQuery` seam, 2 for the students screen); bundle stays
+CSP-clean; `/ds` stays out of `dist/`.
 
 ---
 
