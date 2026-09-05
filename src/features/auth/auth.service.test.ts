@@ -20,7 +20,10 @@ const USER: AuthUser = {
 };
 
 const HAPPY: StubRoutes = {
-  'POST /auth/login': { accessToken: 'access-1', user: USER },
+  'POST /auth/login': { mfaRequired: true, challengeId: 'ch1' },
+  'POST /auth/verify-otp': { accessToken: 'access-1', user: USER },
+  'POST /auth/password-reset/request': { mfaRequired: true, challengeId: 'reset-1' },
+  'POST /auth/password-reset/confirm': undefined,
   'GET /auth/refresh/csrf-token': { csrfToken: 'csrf-1' },
   'POST /auth/refresh': { accessToken: 'access-2' },
   'POST /auth/logout': undefined,
@@ -39,14 +42,43 @@ function throws(error: unknown) {
   };
 }
 
-describe('signIn', () => {
-  it('stores the access token so subsequent requests are authenticated', async () => {
+describe('two-factor sign-in', () => {
+  /* A password alone must not open a session (F12): the first step yields only
+     a challenge id, and the token store stays empty until the code is verified. */
+  it('returns a challenge id and stores no token for the password step', async () => {
     const { service, tokens } = makeService();
 
-    const user = await service.signIn({ username: 'headteacher', password: 'pw' });
+    const challengeId = await service.beginSignIn({ email: 'ht@example.com', password: 'pw' });
+
+    expect(challengeId).toBe('ch1');
+    expect(tokens.get()).toBeNull();
+  });
+
+  it('stores the access token once the emailed code is verified', async () => {
+    const { service, tokens } = makeService();
+
+    const user = await service.completeSignIn({ challengeId: 'ch1', code: '123456' });
 
     expect(user).toEqual(USER);
     expect(tokens.get()).toBe('access-1');
+  });
+});
+
+describe('password reset', () => {
+  it('returns the challenge id from a reset request', async () => {
+    const { service } = makeService();
+
+    await expect(service.requestPasswordReset({ email: 'ht@example.com' })).resolves.toBe('reset-1');
+  });
+
+  /* Reset does not sign the user in — they return to login afterwards — so no
+     token is stored by confirming. */
+  it('confirms a new password without opening a session', async () => {
+    const { service, tokens } = makeService();
+
+    await service.confirmPasswordReset({ challengeId: 'reset-1', code: '123456', newPassword: 'a-brand-new-password' });
+
+    expect(tokens.get()).toBeNull();
   });
 });
 

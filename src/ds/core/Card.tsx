@@ -28,7 +28,7 @@ export function Card({
     <section
       className={cn(
         'overflow-hidden rounded-lg border shadow-card',
-        ceremony ? 'bg-paper border-ceremony-line' : 'bg-surface border-subtle',
+        ceremony ? 'bg-paper border-ceremony-line' : 'bg-surface border-default',
         className,
       )}
       {...rest}

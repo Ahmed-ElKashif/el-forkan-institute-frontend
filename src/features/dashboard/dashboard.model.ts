@@ -5,13 +5,6 @@
    teacher's are the branch or the institute. The client renders whatever the
    scope returns — it does not re-scope. */
 
-/** One row of `GET /academic-years`, newest first. The dashboard needs only the
- *  id (to ask for the summary) and the Hijri year (to caption it). */
-export interface AcademicYear {
-  id: number;
-  hijriYear: number;
-}
-
 export interface DashboardSummary {
   academicYearId: number;
   hijriYear: number;
@@ -25,4 +18,47 @@ export interface DashboardSummary {
   sections: number;
   pendingCarries: number;
   certificatesIssued: number;
+}
+
+/** One level's enrolment split, from `/reports/headcount-by-level` — the source
+ *  for the "students per level" chart. */
+export interface HeadcountCell {
+  levelId: number;
+  levelCode: string;
+  levelNameAr: string;
+  male: number;
+  female: number;
+  total: number;
+}
+
+/** One subject's outcome tally, from `/reports/pass-rates` — aggregated into the
+ *  pass-rate ring. `sat` is how many took the exam. */
+export interface PassRateRow {
+  levelId: number;
+  levelCode: string;
+  subjectId: number;
+  subjectNameAr: string;
+  sat: number;
+  passed: number;
+  failed: number;
+  absent: number;
+}
+
+/** Students per markaz, from `/reports/headcount-by-markaz`. `markazId` is null
+ *  for students with no markaz on file. */
+export interface MarkazCount {
+  markazId: number | null;
+  markazNameAr: string;
+  count: number;
+}
+
+/** One session-day's attendance, from `/reports/attendance-trend` — the
+ *  attendance-rate line. Ordered oldest first. */
+export interface AttendancePoint {
+  sessionDate: string;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  attendanceRate: number;
 }

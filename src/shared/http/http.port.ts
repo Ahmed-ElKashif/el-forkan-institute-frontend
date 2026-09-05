@@ -13,6 +13,10 @@ export interface HttpRequest {
   /** Do not attempt a refresh-and-retry on 401. The auth endpoints set this,
    *  since refreshing in reaction to a failed refresh would loop. */
   noRetry?: boolean;
+  /** `'blob'` returns the raw response body (for a file download) instead of
+   *  parsing it as JSON. The token-attach and 401 refresh-and-replay still
+   *  apply, so an authenticated export goes through the same seam. */
+  responseType?: 'json' | 'blob';
 }
 
 /** The seam every gateway talks through. Keeping it an interface is what lets

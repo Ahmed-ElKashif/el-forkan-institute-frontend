@@ -1,56 +1,89 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Alert,
   Badge,
-  DataTable,
   EmptyState,
-  Pagination,
   SearchInput,
-  Skeleton,
+  Select,
   formatNumber,
   type BadgeProps,
   type Column,
+  type SelectOption,
 } from '../../ds';
-import { DEFAULT_PAGE_SIZE, pageCount, type Page } from '../../shared/api/pagination';
 import { useDebouncedValue } from '../../shared/react/useDebouncedValue';
+import { PagedList } from '../../shared/react/PagedList';
+import { useLevelsQuery } from '../catalogue';
 import { useListStudentsQuery } from './students.api';
 import type { Student } from './student.model';
 
-const STATUS_TONE: Record<string, BadgeProps['tone']> = {
-  active: 'success',
-  graduated: 'brand',
-  withdrawn: 'neutral',
-  suspended: 'warning',
+const RISK_TONE: Record<string, NonNullable<BadgeProps['tone']>> = {
+  warning: 'warning',
+  over: 'danger',
 };
 
-/** The students roster: search, paginate, read. The three F1 exit criteria live
- *  here — real Arabic names paginate and search without RTL breakage, and every
- *  number is Latin and tabular. Editing arrives in a later phase. */
+/** The students roster: search, filter by study year, page. The status column
+ *  is now an **attendance-risk** badge (§4.8) — who is near or over the absence
+ *  limit this term — so a teacher can spot who to follow up; a row opens the
+ *  profile, where the count, contact and "warn" action live. Lifecycle status
+ *  moved to the profile's edit form. */
 export function StudentsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [term, setTerm] = useState('');
+  const [levelId, setLevelId] = useState<number | undefined>(undefined);
+  const [gender, setGender] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
   const search = useDebouncedValue(term.trim(), 300);
 
-  /* RTK Query caches each (page, search) separately, so revisiting a page is
-     instant and typing fires one request per pause (the term is debounced).
-     A first-ever visit to a page shows the skeleton; `isFetching` dims the
-     table on any refetch. */
-  const query = useListStudentsQuery({ page, search });
+  const query = useListStudentsQuery({ page, search, levelId, gender });
   const roster = query.data;
+  const levels = useLevelsQuery();
 
   function onSearch(next: string) {
     setTerm(next);
     setPage(1);
   }
 
+  function onLevel(next: string) {
+    setLevelId(next ? Number(next) : undefined);
+    setPage(1);
+  }
+
+  function onGender(next: string) {
+    setGender(next || undefined);
+    setPage(1);
+  }
+
+  const genderOptions: SelectOption[] = [
+    { value: '', label: t('students.filters.allGroups') },
+    { value: 'male', label: t('students.filters.boysGroup') },
+    { value: 'female', label: t('students.filters.girlsGroup') },
+  ];
+
+  // "All years" first, then the six levels in their teaching order.
+  const levelOptions: SelectOption[] = [
+    { value: '', label: t('students.filters.allLevels') },
+    ...[...(levels.data ?? [])]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((level) => ({ value: level.id, label: level.nameAr })),
+  ];
+
   const columns: Column<Student>[] = [
-    { key: 'fullName', header: t('students.columns.name'), render: (s) => s.fullName },
     {
-      key: 'studentCode',
-      header: t('students.columns.code'),
-      render: (s) => <span className="ef-num">{s.studentCode}</span>,
+      key: 'fullName',
+      header: t('students.columns.name'),
+      render: (s) => (
+        <Link to={`/students/${s.id}`} className="font-semibold text-brand-text hover:underline">
+          {s.fullName}
+        </Link>
+      ),
+    },
+    {
+      key: 'studyYear',
+      header: t('students.columns.studyYear'),
+      render: (s) =>
+        s.levelName ?? <span className="text-ink-400">{t('students.noLevel')}</span>,
     },
     { key: 'gender', header: t('students.columns.gender'), render: (s) => t(`students.gender.${s.gender}`) },
     {
@@ -66,23 +99,50 @@ export function StudentsPage() {
         ),
     },
     {
-      key: 'status',
-      header: t('students.columns.status'),
-      render: (s) => (
-        <Badge tone={STATUS_TONE[s.status] ?? 'neutral'}>{t(`students.status.${s.status}`)}</Badge>
-      ),
+      key: 'attendance',
+      header: t('students.columns.attendance'),
+      render: (s) =>
+        s.attendanceRisk === 'none' ? (
+          <span className="text-ink-400">—</span>
+        ) : (
+          <Badge tone={RISK_TONE[s.attendanceRisk]} icon="triangle-alert">
+            {t(`students.risk.${s.attendanceRisk}`)}
+            {s.maxAbsences != null ? (
+              <span className="ef-num">
+                {' '}
+                ({formatNumber(s.absences)}/{formatNumber(s.maxAbsences)})
+              </span>
+            ) : null}
+          </Badge>
+        ),
     },
   ];
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <SearchInput
-          value={term}
-          onChange={(e) => onSearch(e.target.value)}
-          aria-label={t('students.searchPlaceholder')}
-          placeholder={t('students.searchPlaceholder')}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchInput
+            value={term}
+            onChange={(e) => onSearch(e.target.value)}
+            aria-label={t('students.searchPlaceholder')}
+            placeholder={t('students.searchPlaceholder')}
+          />
+          <Select
+            aria-label={t('students.filters.level')}
+            value={levelId ?? ''}
+            options={levelOptions}
+            onChange={(e) => onLevel(e.target.value)}
+            wrapperClassName="w-40"
+          />
+          <Select
+            aria-label={t('students.filters.group')}
+            value={gender ?? ''}
+            options={genderOptions}
+            onChange={(e) => onGender(e.target.value)}
+            wrapperClassName="w-40"
+          />
+        </div>
         {roster ? (
           <span className="whitespace-nowrap text-sm text-ink-500">
             {t('students.total', { total: formatNumber(roster.total) })}
@@ -90,68 +150,29 @@ export function StudentsPage() {
         ) : null}
       </div>
 
-      <StudentsBody
-        roster={roster}
+      <PagedList
+        data={roster}
         isLoading={query.isLoading}
         isError={query.isError}
         isFetching={query.isFetching}
-        search={search}
         columns={columns}
+        getRowKey={(s) => s.id}
+        errorTitle={t('students.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(s) => navigate(`/students/${s.id}`)}
+        empty={
+          search ? (
+            <EmptyState
+              icon="search"
+              title={t('students.emptySearch.title')}
+              description={t('students.emptySearch.description', { term: search })}
+            />
+          ) : (
+            <EmptyState icon="users" title={t('students.empty.title')} description={t('students.empty.description')} />
+          )
+        }
       />
     </section>
-  );
-}
-
-interface BodyProps {
-  roster: Page<Student> | undefined;
-  isLoading: boolean;
-  isError: boolean;
-  isFetching: boolean;
-  search: string;
-  columns: Column<Student>[];
-  page: number;
-  onPage: (page: number) => void;
-}
-
-function StudentsBody({ roster, isLoading, isError, isFetching, search, columns, page, onPage }: BodyProps) {
-  const { t } = useTranslation();
-
-  if (isLoading && !roster) return <TableSkeleton />;
-  if (isError && !roster) return <Alert tone="danger" title={t('students.error')} />;
-  if (!roster) return null;
-
-  if (roster.items.length === 0) {
-    return search ? (
-      <EmptyState
-        icon="search"
-        title={t('students.emptySearch.title')}
-        description={t('students.emptySearch.description', { term: search })}
-      />
-    ) : (
-      <EmptyState icon="users" title={t('students.empty.title')} description={t('students.empty.description')} />
-    );
-  }
-
-  return (
-    <div className={isFetching ? 'opacity-60 transition-opacity' : undefined} aria-busy={isFetching}>
-      <DataTable columns={columns} rows={roster.items} getRowKey={(s) => s.id} />
-      <Pagination
-        className="mt-4"
-        page={page}
-        pageCount={pageCount(roster.total, DEFAULT_PAGE_SIZE)}
-        total={roster.total}
-        onPage={onPage}
-      />
-    </div>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <div className="rounded-lg border border-subtle bg-surface p-4">
-      <Skeleton rows={8} height={20} />
-    </div>
   );
 }

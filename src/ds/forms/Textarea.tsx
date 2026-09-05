@@ -21,7 +21,7 @@ export function Textarea({
       readOnly={readOnly}
       aria-invalid={invalid || undefined}
       className={cn(
-        'w-full resize-y rounded-md border p-3 text-sm leading-body text-ink-900',
+        'w-full resize-y rounded-md border p-3 text-base leading-body text-ink-900',
         readOnly || disabled ? 'bg-canvas' : 'bg-surface',
         invalid ? 'border-danger' : 'border-default',
         disabled && 'cursor-not-allowed',

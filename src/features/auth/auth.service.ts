@@ -1,5 +1,11 @@
 import { SessionExpiredError } from './auth.errors';
-import type { AuthUser, Credentials } from './auth.model';
+import type {
+  AuthUser,
+  Credentials,
+  OtpVerification,
+  PasswordResetConfirm,
+  PasswordResetRequest,
+} from './auth.model';
 import type { AuthGateway } from './auth.gateway';
 import type { TokenStore } from './auth.ports';
 
@@ -22,10 +28,31 @@ export class AuthService {
     private readonly tokens: TokenStore,
   ) {}
 
-  async signIn(credentials: Credentials): Promise<AuthUser> {
-    const { accessToken, user } = await this.gateway.login(credentials);
+  /** First factor: verify the password and get an OTP challenge id. No token is
+   *  stored yet — there is no session until the code is verified. */
+  async beginSignIn(credentials: Credentials): Promise<string> {
+    const { challengeId } = await this.gateway.login(credentials);
+    return challengeId;
+  }
+
+  /** Second factor: exchange the emailed code for a session. */
+  async completeSignIn(verification: OtpVerification): Promise<AuthUser> {
+    const { accessToken, user } = await this.gateway.verifyOtp(verification);
     this.tokens.set(accessToken);
     return user;
+  }
+
+  /** Forgot-password, step one: request a reset code, get back a challenge id.
+   *  Stores no token — there is no session until the user signs in afresh. */
+  async requestPasswordReset(request: PasswordResetRequest): Promise<string> {
+    const { challengeId } = await this.gateway.requestPasswordReset(request);
+    return challengeId;
+  }
+
+  /** Forgot-password, step two: set the new password. Deliberately does not sign
+   *  the user in — they return to the login screen and authenticate normally. */
+  async confirmPasswordReset(confirm: PasswordResetConfirm): Promise<void> {
+    await this.gateway.confirmPasswordReset(confirm);
   }
 
   /** Rehydrate on page load. The access token is gone (it only ever lived in

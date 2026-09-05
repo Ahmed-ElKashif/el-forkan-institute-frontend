@@ -7,7 +7,7 @@ deliberate decision from an accident.
 Companion docs: [build-plan.md](build-plan.md) (what to build next),
 [progress.md](progress.md) (what happened), [memory.md](memory.md) (gotchas).
 
-## Current module map (after F1)
+## Current module map (F6 complete — all fourteen destinations built)
 
 ```
 src/
@@ -15,11 +15,36 @@ src/
 │  ├─ auth/             model · errors · ports · service · gateway · token store
 │  │                    provider · route guard · role guard + 403 · login · index.ts
 │  ├─ dashboard/        model · api (injectEndpoints) · DashboardPage · index.ts
-│  └─ students/         model · api (injectEndpoints) · StudentsPage · index.ts
+│  ├─ students/         model · api (injectEndpoints) · StudentsPage · index.ts
+│  ├─ sections/         model · api · SectionsPage (reusable picker) · index.ts
+│  │                    (barrel exposes useGetSectionQuery/useListSectionsQuery)
+│  ├─ attendance/       model · api · AttendanceGridPage · index.ts
+│  ├─ scores/           model · api · ExamPickerPage · ScoreGridPage
+│  │                    CorrectionDialog · index.ts
+│  ├─ import/           model · api · UploadForm · ImportPreview
+│  │                    FixRowDialog · ImportPage · index.ts
+│  ├─ certificates/     model · api · CertificatesPage (tabs: issue/revoke)
+│  │                    CertificatePrintPage (shell-less A4 print) · index.ts
+│  ├─ audit/            model · api · AuditPage (paged log + snapshot dialog) · index.ts
+│  ├─ promotion/        model · api · PromotionPage (preview → confirm) · index.ts
+│  ├─ users/            model · api · UsersPage · UserFormDialog (create/edit) · index.ts
+│  │                    (barrel also exposes the teacher picker read)
+│  ├─ catalogue/        model · api · CataloguePage (tabs: levels/subjects/books)
+│  │                    Level/Subject/Book form dialogs · index.ts
+│  │                    (barrel also exposes levels + subject/book picker reads)
+│  ├─ years/            model · api (mutations only; reads reuse shared calendar)
+│  │                    YearsPage · YearDialog · TermEditDialog · index.ts
+│  ├─ curriculum/       model · api · CurriculumPage (year/level/term → tree)
+│  │                    CurriculumRowCard · CurriculumRowDialog · UnitDialog · index.ts
+│  ├─ timetable/        model (+ groupByWeekday) · api · TimetableEditorPage
+│  │                    WeekGrid · SlotDialog · GenerateSessionsDialog · index.ts
+│  └─ whatsapp/         model (+ pendingCount) · api · WhatsAppPage (tabs:
+│                       templates/campaigns) · TemplateDialog · ReminderDialog · index.ts
 ├─ shared/              only what more than one feature needs
-│  ├─ http/             HttpClient port · FetchHttpClient · HttpError
-│  ├─ api/              RTK Query: baseQuery (bridges HttpClient) · api · store · pagination
-│  ├─ react/            useDebouncedValue
+│  ├─ http/             HttpClient port · FetchHttpClient (JSON + multipart) · HttpError
+│  ├─ api/              RTK Query: baseQuery (bridges HttpClient) · api · store
+│  │                    pagination · calendar (year/term reads + Calendar tag + defaultTerm) · reference (branches)
+│  ├─ react/            useDebouncedValue · TermPicker · PagedList (shared list shell)
 │  ├─ di/               container.ts (composition root) · DiProvider.tsx
 │  └─ i18n/             i18next init · ar.json
 ├─ ds/                  design system — 40 components + tokens (F0a)

@@ -78,13 +78,20 @@ export function SideNav({
                       onClick={() => onSelect?.(i.key)}
                       aria-current={on ? 'page' : undefined}
                       className={cn(
-                        'flex h-10 w-full cursor-pointer items-center gap-3 rounded-md border-none px-3 text-start text-sm',
+                        'relative flex h-10 w-full cursor-pointer items-center gap-3 rounded-md border-none px-3 text-start text-sm',
                         'transition-colors duration-[var(--dur-fast)] ease-standard',
                         on
                           ? 'bg-teal-600 font-semibold text-white'
-                          : 'bg-transparent font-normal text-nav-idle hover:bg-teal-700',
+                          : 'bg-transparent font-normal text-nav-idle hover:bg-teal-700 hover:text-white',
                       )}
                     >
+                      {/* Active marker: a crisp bar on the inline-start edge. */}
+                      {on ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-1.5 start-0 w-1 rounded-full bg-white"
+                        />
+                      ) : null}
                       <Icon name={i.icon} size={18} />
                       <span className="flex-1">{i.label}</span>
                       {i.badge != null ? (

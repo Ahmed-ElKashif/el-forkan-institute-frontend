@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { AuthUser, Credentials } from './auth.model';
+import type { AuthUser, Credentials, OtpVerification } from './auth.model';
 import { useContainer } from '../../shared/di/DiProvider';
 import { AuthContext, type AuthContextValue, type AuthStatus } from './auth-context';
 
@@ -39,9 +39,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [auth]);
 
-  const signIn = useCallback(
-    async (credentials: Credentials) => {
-      const signedIn = await auth.signIn(credentials);
+  /* First factor: no session yet, so no state change — the caller gets the
+     challenge id and moves to the code step. */
+  const beginSignIn = useCallback(
+    (credentials: Credentials) => auth.beginSignIn(credentials),
+    [auth],
+  );
+
+  const verifyOtp = useCallback(
+    async (verification: OtpVerification) => {
+      const signedIn = await auth.completeSignIn(verification);
       setUser(signedIn);
       setStatus('authenticated');
     },
@@ -55,8 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [auth]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, signIn, signOut }),
-    [status, user, signIn, signOut],
+    () => ({ status, user, beginSignIn, verifyOtp, signOut }),
+    [status, user, beginSignIn, verifyOtp, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

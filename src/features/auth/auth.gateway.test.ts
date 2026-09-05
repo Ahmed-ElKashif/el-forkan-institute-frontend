@@ -3,6 +3,7 @@ import { AuthGateway } from './auth.gateway';
 import {
   AccountInactiveError,
   InvalidCredentialsError,
+  InvalidOtpError,
   NetworkError,
   SessionExpiredError,
   TooManyAttemptsError,
@@ -62,9 +63,19 @@ describe('error translation', () => {
   it('reads a 401 on login as bad credentials', async () => {
     const http = clientRejecting(new HttpError(401, { message: 'Invalid username or password' }));
 
-    await expect(new AuthGateway(http).login({ username: 'a', password: 'b' })).rejects.toBeInstanceOf(
+    await expect(new AuthGateway(http).login({ email: 'a@b.com', password: 'b' })).rejects.toBeInstanceOf(
       InvalidCredentialsError,
     );
+  });
+
+  /* A 401 on the second step is a bad or stale code — a different failure from
+     a bad password, so it maps to its own error, not InvalidCredentialsError. */
+  it('reads a 401 on verify-otp as an invalid code', async () => {
+    const http = clientRejecting(new HttpError(401, { message: 'Invalid or expired code' }));
+
+    await expect(
+      new AuthGateway(http).verifyOtp({ challengeId: 'ch1', code: '000000' }),
+    ).rejects.toBeInstanceOf(InvalidOtpError);
   });
 
   it('reads a 401 on refresh as an expired session', async () => {
@@ -80,7 +91,7 @@ describe('error translation', () => {
     const http = clientRejecting(new HttpError(403, { message: 'Account is inactive' }));
 
     await expect(
-      new AuthGateway(http).login({ username: 'a', password: 'b' }),
+      new AuthGateway(http).login({ email: 'a@b.com', password: 'b' }),
     ).rejects.toBeInstanceOf(AccountInactiveError);
   });
 
@@ -97,7 +108,7 @@ describe('error translation', () => {
     const http = clientRejecting(new HttpError(403, { message: 'invalid csrf token' }));
 
     await expect(
-      new AuthGateway(http).login({ username: 'a', password: 'b' }),
+      new AuthGateway(http).login({ email: 'a@b.com', password: 'b' }),
     ).rejects.toBeInstanceOf(UnexpectedAuthError);
   });
 
@@ -105,7 +116,7 @@ describe('error translation', () => {
     const http = clientRejecting(new HttpError(403, { message: 'Something else entirely' }));
 
     await expect(
-      new AuthGateway(http).login({ username: 'a', password: 'b' }),
+      new AuthGateway(http).login({ email: 'a@b.com', password: 'b' }),
     ).rejects.toBeInstanceOf(UnexpectedAuthError);
   });
 
@@ -113,7 +124,7 @@ describe('error translation', () => {
     const http = clientRejecting(new HttpError(429, { message: 'ThrottlerException' }));
 
     await expect(
-      new AuthGateway(http).login({ username: 'a', password: 'b' }),
+      new AuthGateway(http).login({ email: 'a@b.com', password: 'b' }),
     ).rejects.toBeInstanceOf(TooManyAttemptsError);
   });
 
@@ -121,5 +132,30 @@ describe('error translation', () => {
     const http = clientRejecting(new NetworkFailureError());
 
     await expect(new AuthGateway(http).fetchCurrentUser()).rejects.toBeInstanceOf(NetworkError);
+  });
+});
+
+describe('password reset', () => {
+  it('requests a code and returns the challenge id', async () => {
+    const http = clientReturning(() => ({ mfaRequired: true, challengeId: 'reset-1' }));
+
+    await expect(
+      new AuthGateway(http).requestPasswordReset({ email: 'a@b.com' }),
+    ).resolves.toMatchObject({ challengeId: 'reset-1' });
+  });
+
+  /* The confirm step verifies the emailed code, so a 401 there is a bad or
+     expired code — the same InvalidOtpError as login's second step, not a
+     credentials failure. */
+  it('reads a 401 on confirm as an invalid code', async () => {
+    const http = clientRejecting(new HttpError(401, { message: 'Invalid or expired code' }));
+
+    await expect(
+      new AuthGateway(http).confirmPasswordReset({
+        challengeId: 'reset-1',
+        code: '000000',
+        newPassword: 'a-brand-new-password',
+      }),
+    ).rejects.toBeInstanceOf(InvalidOtpError);
   });
 });

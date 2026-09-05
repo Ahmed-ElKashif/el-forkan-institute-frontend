@@ -26,7 +26,7 @@ const USER: AuthUser = {
   role: 'head_teacher',
   branchId: 1,
   phone: '+201000000000',
-  email: null,
+  email: 'headteacher@example.com',
   isActive: true,
 };
 
@@ -35,6 +35,7 @@ const TEACHER: AuthUser = {
   id: 'b2',
   fullName: 'أحمد سالم',
   username: 'teacher1',
+  email: 'teacher1@example.com',
   role: 'teacher',
 };
 
@@ -45,7 +46,10 @@ const NO_SESSION: StubRoutes = {
   'POST /auth/refresh': () => {
     throw new HttpError(401, { message: 'Missing refresh token' });
   },
-  'POST /auth/login': { accessToken: 'access-1', user: USER },
+  /* Two-factor (F12): the password step yields a challenge; the code step
+     yields the session. */
+  'POST /auth/login': { mfaRequired: true, challengeId: 'ch1' },
+  'POST /auth/verify-otp': { accessToken: 'access-1', user: USER },
   'GET /users/me': USER,
   /* The signed-in landing page is the dashboard, which reads the current year
      then its summary. Stubbed so these auth/routing tests land on a rendered
@@ -60,6 +64,13 @@ const NO_SESSION: StubRoutes = {
     pendingCarries: 0,
     certificatesIssued: 0,
   },
+  // The dashboard's chart feeds; empty here, so the charts show their empty
+  // state rather than an error on these auth/routing tests. The trend resolves
+  // its term from the year detail (no terms → nothing to plot).
+  'GET /reports/headcount-by-level?academicYearId=1': [],
+  'GET /reports/pass-rates?academicYearId=1': [],
+  'GET /reports/headcount-by-markaz?academicYearId=1': [],
+  'GET /academic-years/1': { id: 1, hijriYear: 1447, terms: [] },
 };
 
 function containerWith(routes: StubRoutes = {}) {
@@ -68,14 +79,25 @@ function containerWith(routes: StubRoutes = {}) {
 }
 
 function containerAs(account: AuthUser) {
-  return containerWith({ 'POST /auth/login': { accessToken: 'access-1', user: account } });
+  /* The session (and thus the signed-in identity) comes from the second step. */
+  return containerWith({ 'POST /auth/verify-otp': { accessToken: 'access-1', user: account } });
+}
+
+/** The OTP is six single-digit boxes now, so a code is pasted into the first
+ *  box (its natural entry) rather than typed into one field. */
+async function enterOtp(ui: ReturnType<typeof userEvent.setup>, code: string) {
+  const boxes = await screen.findAllByRole('textbox');
+  await ui.click(boxes[0]);
+  await ui.paste(code);
 }
 
 async function signInAs(account: AuthUser, password = 'ChangeMe123!') {
   const ui = userEvent.setup();
-  await ui.type(await screen.findByLabelText(/اسم المستخدم/), account.username);
+  await ui.type(await screen.findByLabelText(/البريد الإلكتروني/), account.email ?? '');
   await ui.type(screen.getByLabelText(/كلمة المرور/), password);
-  await ui.click(screen.getByRole('button', { name: /تسجيل الدخول/ }));
+  await ui.click(screen.getByRole('button', { name: /متابعة/ }));
+  await enterOtp(ui, '123456');
+  await ui.click(screen.getByRole('button', { name: /تأكيد الدخول/ }));
 }
 
 /* Vitest runs without globals, so RTL's automatic cleanup never registers
@@ -87,18 +109,25 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('signs in with a username and lands on the signed-in page', async () => {
+  it('signs in with email then the emailed code and lands on the signed-in page', async () => {
     const { auth, http } = containerWith();
     render(<App container={{ auth, http }} />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/اسم المستخدم/), 'headteacher');
+    await user.type(await screen.findByLabelText(/البريد الإلكتروني/), 'headteacher@example.com');
     await user.type(screen.getByLabelText(/كلمة المرور/), 'ChangeMe123!');
-    await user.click(screen.getByRole('button', { name: /تسجيل الدخول/ }));
+    await user.click(screen.getByRole('button', { name: /متابعة/ }));
 
-    /* The API authenticates on `username`; sending `email` would 400. */
+    /* Step one sends only the credentials; no session yet (F12). */
     const login = http.calls.find((c) => c.path === '/auth/login');
-    expect(login?.body).toEqual({ username: 'headteacher', password: 'ChangeMe123!' });
+    expect(login?.body).toEqual({ email: 'headteacher@example.com', password: 'ChangeMe123!' });
+
+    await enterOtp(user, '123456');
+    await user.click(screen.getByRole('button', { name: /تأكيد الدخول/ }));
+
+    /* Step two carries the challenge id and the code. */
+    const verify = http.calls.find((c) => c.path === '/auth/verify-otp');
+    expect(verify?.body).toEqual({ challengeId: 'ch1', code: '123456' });
     /* The sign-out control only exists behind the guarded route, so finding it
        is what proves navigation actually happened. */
     expect(await screen.findByRole('button', { name: /تسجيل الخروج/ })).toBeDefined();
@@ -113,9 +142,9 @@ describe('App', () => {
     render(<App container={{ auth, http }} />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/اسم المستخدم/), 'headteacher');
+    await user.type(await screen.findByLabelText(/البريد الإلكتروني/), 'headteacher@example.com');
     await user.type(screen.getByLabelText(/كلمة المرور/), 'wrong');
-    await user.click(screen.getByRole('button', { name: /تسجيل الدخول/ }));
+    await user.click(screen.getByRole('button', { name: /متابعة/ }));
 
     expect(await screen.findByText(/خمس محاولات في الدقيقة/)).toBeDefined();
   });

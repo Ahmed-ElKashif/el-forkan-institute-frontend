@@ -34,7 +34,7 @@ export function Input({
       disabled={disabled}
       aria-invalid={invalid || undefined}
       className={cn(
-        'w-full rounded-md border px-3 text-sm text-ink-900',
+        'w-full rounded-md border px-3 text-base text-ink-900',
         size === 'sm' ? 'h-8' : 'h-10',
         readOnly || disabled ? 'bg-canvas' : 'bg-surface',
         invalid ? 'border-danger' : 'border-default',

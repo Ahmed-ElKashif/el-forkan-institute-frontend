@@ -27,11 +27,23 @@ export interface NavDestination {
 export const DESTINATIONS: NavDestination[] = [
   { key: 'dashboard', path: '/', labelKey: 'nav.dashboard', groupKey: 'nav.groups.general', icon: 'chart-column', phase: 'F1' },
   { key: 'students', path: '/students', labelKey: 'nav.students', groupKey: 'nav.groups.general', icon: 'users', phase: 'F1' },
+  // Teaching before administration: attendance and scores are the daily work, so
+  // the group listing them sits right under General (SideNav orders groups by
+  // first appearance here).
   { key: 'attendance', path: '/attendance', labelKey: 'nav.attendance', groupKey: 'nav.groups.teaching', icon: 'clipboard-check', phase: 'F2' },
   { key: 'scores', path: '/scores', labelKey: 'nav.scores', groupKey: 'nav.groups.teaching', icon: 'clipboard-list', phase: 'F3' },
+  { key: 'sections', path: '/sections', labelKey: 'nav.sections', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
+  { key: 'users', path: '/users', labelKey: 'nav.users', groupKey: 'nav.groups.administration', icon: 'user', headTeacherOnly: true, phase: 'F6' },
+  { key: 'catalogue', path: '/catalogue', labelKey: 'nav.catalogue', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
+  { key: 'curriculum', path: '/curriculum', labelKey: 'nav.curriculum', groupKey: 'nav.groups.administration', icon: 'scroll-text', headTeacherOnly: true, phase: 'F6' },
+  { key: 'timetable', path: '/timetable', labelKey: 'nav.timetable', groupKey: 'nav.groups.administration', icon: 'rows-4', headTeacherOnly: true, phase: 'F6' },
+  { key: 'whatsapp', path: '/whatsapp', labelKey: 'nav.whatsapp', groupKey: 'nav.groups.administration', icon: 'message-circle', headTeacherOnly: true, phase: 'F6' },
   { key: 'imports', path: '/imports', labelKey: 'nav.imports', groupKey: 'nav.groups.administration', icon: 'file-spreadsheet', headTeacherOnly: true, phase: 'F4' },
+  { key: 'exports', path: '/exports', labelKey: 'nav.exports', groupKey: 'nav.groups.administration', icon: 'download', headTeacherOnly: true, phase: 'F4' },
   { key: 'certificates', path: '/certificates', labelKey: 'nav.certificates', groupKey: 'nav.groups.administration', icon: 'award', headTeacherOnly: true, phase: 'F5' },
+  { key: 'promotion', path: '/promotion', labelKey: 'nav.promotion', groupKey: 'nav.groups.administration', icon: 'rotate-ccw', headTeacherOnly: true, phase: 'F6' },
   { key: 'audit', path: '/audit', labelKey: 'nav.audit', groupKey: 'nav.groups.administration', icon: 'history', headTeacherOnly: true, phase: 'F6' },
+  { key: 'settings', path: '/settings', labelKey: 'nav.settings', groupKey: 'nav.groups.administration', icon: 'settings', headTeacherOnly: true, phase: 'F6' },
 ];
 
 /** The destination that owns the current path.

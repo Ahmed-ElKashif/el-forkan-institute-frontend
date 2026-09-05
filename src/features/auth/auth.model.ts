@@ -25,12 +25,40 @@ export interface AuthUser {
 }
 
 export interface Credentials {
-  username: string;
+  email: string;
   password: string;
 }
 
-/** What `POST /auth/login` yields. The refresh token is deliberately absent:
- *  it lives in an httpOnly cookie the client can never read. */
+/** What `POST /auth/login` yields now: not a session, but the id of an OTP
+ *  challenge (F12). A password alone proves the first factor; the emailed code
+ *  is the second. */
+export interface LoginChallenge {
+  challengeId: string;
+}
+
+/** The second-factor submission — the challenge id plus the six-digit code from
+ *  the email. */
+export interface OtpVerification {
+  challengeId: string;
+  code: string;
+}
+
+/** Forgot-password, step one: the email a reset code is sent to. */
+export interface PasswordResetRequest {
+  email: string;
+}
+
+/** Forgot-password, step two: the challenge id from step one, the emailed code,
+ *  and the new password. */
+export interface PasswordResetConfirm {
+  challengeId: string;
+  code: string;
+  newPassword: string;
+}
+
+/** What `POST /auth/verify-otp` yields — the actual session. The refresh token
+ *  is deliberately absent: it lives in an httpOnly cookie the client can never
+ *  read. */
 export interface LoginResult {
   accessToken: string;
   user: AuthUser;

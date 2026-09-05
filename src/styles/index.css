@@ -100,6 +100,40 @@
   }
 }
 
+/* Overlay motion — used by the modal, its scrim, and the toast. Kept here (not
+   inline) so the durations track the motion tokens and reduced-motion disables
+   them via the tokens' zeroed durations. */
+@keyframes ef-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ef-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ef-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    A4 portrait RTL. Roster sheets, result sheets and certificates are real
    deliverables, so every state fill becomes an outlined black glyph — nothing

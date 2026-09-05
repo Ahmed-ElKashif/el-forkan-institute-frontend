@@ -1,27 +1,55 @@
 import { api } from '../../shared/api/api';
-import type { Page } from '../../shared/api/pagination';
 import { toQueryString } from '../../shared/api/pagination';
-import type { AcademicYear, DashboardSummary } from './dashboard.model';
+import type {
+  AttendancePoint,
+  DashboardSummary,
+  HeadcountCell,
+  MarkazCount,
+  PassRateRow,
+} from './dashboard.model';
 
-/* The dashboard is two chained reads: find the current academic year, then ask
-   for that year's summary. Split into two endpoints so RTK Query caches the year
-   (it rarely changes) independently of the summary (which every screen's data
-   feeds into). */
+/* The dashboard is two chained reads: the current academic year (from the
+   shared calendar endpoint — the sections list and the grid read it too), then
+   that year's summary, cached separately because every screen's data feeds it. */
 const dashboardApi = api.injectEndpoints({
   endpoints: (build) => ({
-    currentAcademicYear: build.query<AcademicYear | null, void>({
-      // Newest first (the API orders by hijri_year desc), so the first row is
-      // the current year. One row is all the dashboard needs.
-      query: () => ({ path: `/academic-years?${toQueryString({ page: 1, pageSize: 1 })}` }),
-      transformResponse: (response: Page<AcademicYear>) => response.items[0] ?? null,
-    }),
     dashboardSummary: build.query<DashboardSummary, number>({
       query: (academicYearId) => ({
         path: `/reports/summary?${toQueryString({ academicYearId })}`,
       }),
       providesTags: ['Dashboard'],
     }),
+    // Chart feeds — same year scope as the summary, cached under the same tag.
+    headcountByLevel: build.query<HeadcountCell[], number>({
+      query: (academicYearId) => ({
+        path: `/reports/headcount-by-level?${toQueryString({ academicYearId })}`,
+      }),
+      providesTags: ['Dashboard'],
+    }),
+    passRates: build.query<PassRateRow[], number>({
+      query: (academicYearId) => ({
+        path: `/reports/pass-rates?${toQueryString({ academicYearId })}`,
+      }),
+      providesTags: ['Dashboard'],
+    }),
+    headcountByMarkaz: build.query<MarkazCount[], number>({
+      query: (academicYearId) => ({
+        path: `/reports/headcount-by-markaz?${toQueryString({ academicYearId })}`,
+      }),
+      providesTags: ['Dashboard'],
+    }),
+    // Keyed by term, not year — the trend is a term's session days.
+    attendanceTrend: build.query<AttendancePoint[], number>({
+      query: (termId) => ({ path: `/reports/attendance-trend?${toQueryString({ termId })}` }),
+      providesTags: ['Dashboard'],
+    }),
   }),
 });
 
-export const { useCurrentAcademicYearQuery, useDashboardSummaryQuery } = dashboardApi;
+export const {
+  useDashboardSummaryQuery,
+  useHeadcountByLevelQuery,
+  usePassRatesQuery,
+  useHeadcountByMarkazQuery,
+  useAttendanceTrendQuery,
+} = dashboardApi;
