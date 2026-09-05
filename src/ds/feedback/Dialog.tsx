@@ -48,7 +48,10 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-scrim p-6"
+      className={cn(
+        'fixed inset-0 z-50 grid place-items-center bg-scrim p-6',
+        'motion-safe:animate-[ef-fade-in_var(--dur-base)_var(--ease-out)]',
+      )}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
@@ -59,10 +62,17 @@ export function Dialog({
         aria-modal="true"
         tabIndex={-1}
         style={{ maxWidth: width }}
-        className={cn('w-full overflow-hidden rounded-lg bg-surface shadow-modal outline-none', className)}
+        className={cn(
+          // Cap the panel to the viewport and scroll the body so a tall form on
+          // a short phone never clips its footer/submit. dvh tracks the mobile
+          // browser chrome; 3rem = the overlay's p-6 top + bottom.
+          'flex max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-lg bg-surface shadow-modal outline-none',
+          'motion-safe:animate-[ef-dialog-in_var(--dur-base)_var(--ease-standard)]',
+          className,
+        )}
         {...rest}
       >
-        <header className="flex items-start gap-4 px-6 pt-6 pb-4">
+        <header className="flex shrink-0 items-start gap-4 px-6 pt-6 pb-4">
           <div className="flex-1">
             <h2 className="text-xl font-bold">{title}</h2>
             {description ? (
@@ -72,10 +82,10 @@ export function Dialog({
           {onClose ? <IconButton icon="x" label="إغلاق" size="sm" onClick={onClose} /> : null}
         </header>
 
-        <div className="px-6 pb-6">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">{children}</div>
 
         {footer ? (
-          <footer className="flex justify-start gap-3 border-t border-subtle bg-canvas px-6 py-4">
+          <footer className="flex shrink-0 justify-start gap-3 border-t border-subtle bg-canvas px-6 py-4">
             {footer}
           </footer>
         ) : null}

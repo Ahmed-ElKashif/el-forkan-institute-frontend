@@ -33,3 +33,25 @@ export function formatPercent(value: number, fractionDigits = 1): string {
     maximumFractionDigits: fractionDigits,
   }).format(value);
 }
+
+/* ---------------------------------------------------------------------------
+   Hijri date.
+
+   The institute runs on the Hijri calendar, so the page header shows today's
+   full date — weekday, day, month and year — fully in Arabic (Umm al-Qura),
+   with Arabic-Indic numerals. Unlike the Latin figures above, the date is
+   written the traditional way. `ar-EG` defaults to the Gregorian calendar, so
+   the Islamic calendar is pinned with `-ca-`.
+--------------------------------------------------------------------------- */
+
+const hijri = new Intl.DateTimeFormat('ar-EG-u-ca-islamic-umalqura-nu-arab', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+/** Today's full Hijri date in Arabic, e.g. «السبت، ٢٣ ربيع الأول ١٤٤٨ هـ». */
+export function formatHijriDate(date: Date = new Date()): string {
+  return hijri.format(date);
+}

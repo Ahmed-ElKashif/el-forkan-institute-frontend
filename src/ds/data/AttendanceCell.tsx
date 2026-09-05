@@ -39,6 +39,7 @@ export function AttendanceCell({
         type="button"
         disabled={disabled}
         aria-label="غير مسجَّل"
+        title="غير مسجَّل"
         className={cn(
           'h-8 w-full rounded-sm border border-dashed border-default bg-surface text-sm text-ink-400',
           disabled ? 'cursor-default' : 'cursor-pointer',
@@ -56,6 +57,7 @@ export function AttendanceCell({
       type="button"
       disabled={disabled}
       aria-label={state.label}
+      title={state.label}
       className={cn(
         'ef-state inline-flex h-8 w-full items-center justify-center gap-1',
         'rounded-sm border border-transparent text-sm font-semibold',

@@ -31,7 +31,7 @@ export function Field({
       {label ? (
         <label
           htmlFor={htmlFor}
-          className="flex items-center gap-2 text-sm font-semibold leading-[1.4] text-ink-900"
+          className="flex items-center gap-2 text-base font-semibold leading-[1.4] text-ink-900"
         >
           <span>
             {label}
@@ -48,12 +48,12 @@ export function Field({
       {children}
 
       {error ? (
-        <p className="m-0 flex items-start gap-1 text-xs leading-[1.6] text-danger">
+        <p className="m-0 flex items-start gap-1 text-sm leading-[1.6] text-danger">
           <Icon name="circle-alert" size={14} className="mt-0.5" />
           {error}
         </p>
       ) : hint ? (
-        <p className="m-0 text-xs leading-[1.6] text-ink-500">{hint}</p>
+        <p className="m-0 text-sm leading-[1.6] text-ink-500">{hint}</p>
       ) : null}
     </div>
   );

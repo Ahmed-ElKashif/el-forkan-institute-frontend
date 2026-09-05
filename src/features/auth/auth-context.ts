@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { AuthUser, Credentials } from './auth.model';
+import type { AuthUser, Credentials, OtpVerification } from './auth.model';
 
 /** `checking` is the brief window on boot while `restore()` decides whether
  *  the refresh cookie still yields a session. Rendering the login screen
@@ -9,7 +9,11 @@ export type AuthStatus = 'checking' | 'authenticated' | 'anonymous';
 export interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
-  signIn: (credentials: Credentials) => Promise<void>;
+  /** First factor. Resolves to the OTP challenge id; the session is not yet
+   *  open, so `status` stays `anonymous` until {@link verifyOtp} succeeds. */
+  beginSignIn: (credentials: Credentials) => Promise<string>;
+  /** Second factor. On success `status` becomes `authenticated`. */
+  verifyOtp: (verification: OtpVerification) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

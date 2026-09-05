@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 import {
   ArrowDown, ArrowUp, Award, BookOpen, CalendarDays, ChartColumn, Check,
   ChevronDown, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleDot,
-  CircleX, ClipboardCheck, ClipboardList, Download, FileSpreadsheet, FileText,
+  CircleX, ClipboardCheck, ClipboardList, Download, Eye, FileSpreadsheet, FileText,
   GraduationCap, History, Inbox, Info, LoaderCircle, Lock, LockOpen, LogIn,
   LogOut, Menu, MessageCircle, Minus, OctagonAlert, Pencil, Plus, Printer,
   RotateCcw, Rows3, Rows4, ScrollText, Search, Settings, ShieldAlert, Trash2,
@@ -42,6 +42,7 @@ const REGISTRY = {
   'clipboard-check': ClipboardCheck,
   'clipboard-list': ClipboardList,
   download: Download,
+  eye: Eye,
   'file-spreadsheet': FileSpreadsheet,
   'file-text': FileText,
   'graduation-cap': GraduationCap,

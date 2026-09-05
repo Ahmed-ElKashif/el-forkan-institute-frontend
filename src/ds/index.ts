@@ -9,7 +9,7 @@
 --------------------------------------------------------------------------- */
 
 export { cn } from './cn';
-export { formatNumber, formatPercent, formatScore } from './format';
+export { formatHijriDate, formatNumber, formatPercent, formatScore } from './format';
 
 /* --- core ---------------------------------------------------------------- */
 export { Icon, type IconName, type IconProps } from './core/Icon';
@@ -28,6 +28,7 @@ export { Checkbox, type CheckboxProps } from './forms/Checkbox';
 export { RadioGroup, type RadioGroupProps, type RadioOption } from './forms/RadioGroup';
 export { Switch, type SwitchProps } from './forms/Switch';
 export { SearchInput, type SearchInputProps } from './forms/SearchInput';
+export { OtpInput, type OtpInputProps } from './forms/OtpInput';
 
 /* --- data ---------------------------------------------------------------- */
 export {
@@ -50,6 +51,9 @@ export { ScoreInput, type ScoreInputProps } from './data/ScoreInput';
 export { Pagination, type PaginationProps } from './data/Pagination';
 export { EmptyState, type EmptyStateProps } from './data/EmptyState';
 export { Skeleton, type SkeletonProps } from './data/Skeleton';
+export { BarChart, type BarChartProps, type BarRow, type BarSegment } from './data/BarChart';
+export { Donut, type DonutProps, type DonutSegment } from './data/Donut';
+export { LineChart, type LineChartProps, type LinePoint } from './data/LineChart';
 export { DensityToggle, type DensityToggleProps } from './data/DensityToggle';
 
 /* --- feedback ------------------------------------------------------------ */

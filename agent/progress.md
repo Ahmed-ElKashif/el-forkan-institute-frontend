@@ -10,9 +10,14 @@ out, and wraps every signed-in route in the role-scoped frame with route-level
 403 gating. The F0d cookie trap is fixed at the source and the Render blueprints
 exist; provisioning and the exit test are the remaining (account-bound) steps.
 The frontend was reconciled against the backend's 2026-08-30 security
-remediation (see the reconciliation entry below), and **F1 (dashboard +
-students) is built** — RTK Query is now the data layer. **F2 (attendance grid)
-is next.**
+remediation (see the reconciliation entry below). **F1–F5 are built** — dashboard
++ students, the attendance grid, the score grid (lock + correction), the import
+preview → commit, and certificates (issue / print / revoke). RTK Query is the
+data layer. **F5's printed certificate uses the design system's placeholder
+wording**, to be swapped in one place when the head teacher provides it (see
+"Still open"). **F6 is in progress:** the audit viewer and promotion
+preview→confirm are built; **the WhatsApp console, curriculum builder, timetable
+editor and foundation CRUD remain.**
 
 ---
 
@@ -299,6 +304,245 @@ The two component-spanning tests are the exit-criteria proof (search fires the
 right request; rows render with real Arabic), not "React renders" assertions —
 consistent with the F0b testing decision. The `baseQuery` tests cover the one
 seam every future query and mutation crosses, so they earn their place.
+
+## F2 — Sections picker + attendance grid ✅ done
+
+The F1-deferred sections list, and the hardest screen.
+
+- **Fresh-clone baseline fix.** A clean `npm install` broke typecheck and two
+  test files: `@testing-library/react` v16 makes `@testing-library/dom` a *peer*
+  and re-exports `screen`/`waitFor` from it, so it was silently absent. Declared
+  it explicitly; see [memory.md](memory.md). Baseline 35 → **40** tests over F2+F3.
+- **`features/sections/` — a reusable picker.** `SectionsPage` takes a `basePath`
+  and a `captionKey`, so the one list serves both flows: `/attendance` links its
+  rows to `/attendance/:id`, `/scores` to `/scores/:id`. Scoped to the current
+  academic year (the API has no text search on sections — its list schema is
+  `.strict()`), paginated, RTL-safe. The barrel also exposes `useGetSectionQuery`
+  / `SectionDetail`, which the grids read for their heading and scoping.
+- **`features/attendance/` — the grid** at `/attendance/:sectionId`. One read
+  (`GET /sections/:id/attendance?termId=`) renders the student × session sheet
+  over `DataTable` (sticky student column + sticky header). Tapping a
+  `AttendanceCell` cycles present → absent → late → excused; **save is per session
+  column** (`POST /sessions/:id/attendance`). Server data is the base and local
+  `edits` overlay it, so the save's invalidation refetch never discards work in
+  other columns. Absence-threshold warnings from the save response drive a
+  `Badge` (the threshold is not on the grid read, so it appears after the
+  crossing column is saved — noted in-source).
+- **Shared calendar.** The current-year read moved to `shared/api/calendar.ts`
+  (dashboard + picker + grids), joined by an academic-year-by-id read (terms for
+  the grids) and `defaultTerm`. A shared `shared/react/TermPicker` is used by both
+  grids.
+
+**Verified:** lint, typecheck, build, tests all clean. The attendance test taps a
+cell and asserts the column save posts exactly the marked student — real store,
+RTK cache and `DataTable` against a stub.
+
+## F3 — Exam picker + score grid (lock, correction) ✅ done
+
+- **`features/scores/`.** `/scores/:sectionId` picks a term then lists the
+  section's exams (`GET /exams?termId=&levelId=`, filtered to the section's gender
+  or gender-neutral ones); each links to `/scores/exams/:examId`.
+- **The score grid.** `GET /exams/:id/scores` → `ScoreInput` per row + an absent
+  `Checkbox`; the whole exam saves in one `POST`. An over-max mark shows the
+  danger skin, states the rule (`الدرجة تتجاوز الحد الأقصى`), and disables the save —
+  refused with the rule, never a bare "invalid".
+- **Lock and correction.** `LockBanner` with a head-teacher-only lock/unlock
+  action (`RoleGate`). Locked → every `ScoreInput` takes the read-only skin, the
+  bulk save disappears, and the head teacher gets a per-row correction
+  (`CorrectionDialog` → `PATCH /exam-results/:id`) whose reason is mandatory (R8).
+  A teacher sees no unlock and no correction.
+
+**Verified:** lint, typecheck, build, tests all clean. This phase added 3 tests
+(1 attendance, 2 scores); with F2's 2 for the sections list that is 35 → **40**.
+The score tests drive the real auth seam: a teacher hits the over-max refusal, a
+head teacher sees the locked read-only grid with the correction affordance.
+
+## F4 — Import preview → commit ✅ done
+
+Head-teacher only (gated in the registry). The preview-then-commit flow of §6.3,
+built on the DS `CommitBar`.
+
+- **Multipart at the transport (root-cause fix).** `FetchHttpClient` forced
+  `Content-Type: application/json` and JSON-stringified every body, so it could
+  not upload a file. It now passes a `FormData` body through untouched and lets
+  the browser set the multipart boundary; the JSON path is unchanged. Covered by
+  two new transport tests (FormData passthrough; JSON still serialised).
+- **`features/import/`.** `ImportPage` is one screen driven by one piece of
+  state — the job id: none → `UploadForm`, else → `ImportPreview`.
+  - `UploadForm` — targeting (import type, branch, male/female section mapping,
+    historical flag) + the file. The upload is the one multipart `POST /imports`,
+    sent straight through the container's transport (no cache to seed), returning
+    a preview job. Branch defaults to the head teacher's own; an institute-wide
+    head (no branch) picks one from `shared/api/reference` (`GET /branches`).
+  - `ImportPreview` — `GET /imports/:id` + paginated `GET /imports/:id/rows`
+    (server-paged, filterable by action), each row an action `Badge`
+    (create/update/skip/error). `FixRowDialog` corrects a row inline
+    (`PATCH /imports/rows/:id`); the API re-validates so the status changes. The
+    `CommitBar` shows the counts and **stays disabled while any error remains**;
+    commit is `POST /imports/:id/commit` (no body — targeting comes from the
+    persisted job). On success the job reads back `committed` and the screen shows
+    what was written.
+- **Reuse/perf.** The sections list query gained optional `branchId`/`pageSize`
+  so the upload form loads a branch's sections for its dropdowns without a new
+  endpoint. Rows are server-paginated, and the action filter lets a reviewer jump
+  straight to error rows rather than scrolling a long roster.
+
+**Verified:** lint, typecheck, build, tests all clean; **40 → 45 tests** (+3
+`ImportPreview` — action-per-row with commit disabled on error, commit posts when
+clean, inline fix posts a patch; +2 transport — multipart passthrough, JSON
+unchanged). Nothing is written before commit — the preview reads only, and the
+commit is a separate, explicit request.
+
+## F5 — Certificates + print ✅ done (placeholder wording)
+
+Head-teacher only. Issue → print → revoke over the assessment API's certificate
+routes, on the DS `Tabs` / `ConfirmDialog` / `CommitBar`-family primitives.
+
+- **`features/certificates/`.** `CertificatesPage` is two `Tabs`: **جاهزون
+  للتخريج** (`GET /certificates/certifiable`) → issue via `ConfirmDialog`
+  (`POST /certificates`; the API generates the serial `L4-1447-0001`), and
+  **الشهادات الصادرة** (`GET /certificates`) → print or revoke. Revoke uses a
+  reason-required `ConfirmDialog` (`POST /certificates/:id/revoke`, R19); a
+  revoked row shows a Badge and offers neither print nor revoke.
+- **Printing is a recorded reprint.** The print button calls
+  `POST /certificates/:id/reprint` (which records the copy, R19/§4.5) and hands
+  the returned payload to a **shell-less print route** (`/certificates/:id/print`,
+  protected + head-teacher-gated) through navigation state — so the print page
+  writes nothing. It renders the DS `CertificateSheet` (A4 portrait RTL, ivory,
+  gold rules) with a `window.print()` toolbar marked `ef-no-print`, so the
+  browser prints the sheet alone.
+- **Placeholder wording, by design.** `CertificateSheet` keeps its built-in
+  placeholder body — the institute's real wording is still undecided (its own
+  source note, and "Still open" #1). Everything around it (serial, level, name,
+  date, issuer, seal, print CSS) is real; only the body sentence is swapped when
+  the wording lands, in that one component.
+- **Reuse:** a generic `ListBody` renders the loading/error/empty/table shell for
+  both tabs instead of duplicating it.
+
+**Verified:** lint, typecheck, build, tests all clean; **45 → 50 tests** (+3
+`CertificatesPage` — issue posts the student/level/enrolment, revoke stays
+disabled until a reason is typed then posts it, print goes through a reprint; +2
+`CertificatePrintPage` — the sheet renders the serial from navigation state, and
+falls back cleanly when opened without one).
+
+## F6 — the rest ✅ complete (every destination built)
+
+F6 was several distinct screens; built in cohesive increments rather than six
+rushed ones. **All done:**
+
+- **`features/audit/`** — the audit log (`GET /audit-logs`, head-teacher only,
+  gated). Server-paginated (the log grows without bound), filtered by entity type
+  (debounced), and each row opens a `Dialog` showing its before/after JSON
+  snapshot (forced LTR so JSON reads correctly on an RTL page). Read-only.
+- **`features/promotion/`** — promotion preview → confirm (`/promotion`,
+  head-teacher only), the §4.3 capstone. Preview (`POST /promotion/preview`,
+  writes nothing) lists each enrolment's decision as a `Badge`; the `CommitBar`
+  shows the decision counts and confirms (`POST /promotion/confirm`) **exactly the
+  non-blocked rows** — a blocked row is never written. An optional target-year
+  `Select` (from a new `useAcademicYearsQuery`) moves students forward, or the
+  decisions are recorded in place. The confirm invalidates `Student`/`Section`.
+- Both got a nav entry under Administration; a new `useAcademicYearsQuery` (list)
+  joined `shared/api/calendar`.
+- **`features/users/`** — staff CRUD (`/users`, head-teacher only), the first of
+  the foundation screens. Search + role filter + include-inactive, server-paged.
+  `UserFormDialog` creates (fullName, username, gender, phone, email, password,
+  role, branch) and edits (identity fields — username/gender — and the password
+  are create-/reset-only, mirroring the API). Soft-delete goes through a
+  reason-required `ConfirmDialog` (R9); a separate dialog resets a password
+  (`POST /users/:id/password`). Reuses `useBranchesQuery`.
+
+- **`features/catalogue/`** — the catalogue (`/catalogue`, head-teacher only), a
+  `Tabs` screen over three entities: **levels** (fixed rows; a `Switch` dialog
+  edits the R1/R15/R20 progression flags, `PATCH /levels/:id`), **subjects**
+  (`PagedList` + search + create/edit; `code` is create-only), and **books**
+  (`PagedList` + create/edit). Subject aliases are shown as a read-only count —
+  the add/remove endpoints exist and can be wired later.
+- **`features/years/`** — academic years & terms (`/years`, head-teacher only),
+  the last foundation screen. Years list (not paginated — years are few); create
+  takes only the Hijri year (`POST /academic-years`; the API generates the term
+  and exam calendar), and a `YearDialog` edits a year's dates/status. Selecting a
+  year shows its terms, each edited via `TermEditDialog` (dates, exam window,
+  status; `PATCH /terms/:id`). The shared `calendar` types were enriched with the
+  full year/term fields (the API already returned them) and given a `Calendar`
+  cache tag, so this feature reuses the shared reads and adds only the mutations —
+  a year/term edit refreshes every calendar reader (pickers, dashboard).
+- **`features/curriculum/`** — the curriculum builder (`/curriculum`, head-teacher
+  only, gated), F6's hardest screen: the nested syllabus tree. Pick a year, level
+  and term, then build مواد, their فروع one level deep (§4.1 caps nesting at two,
+  so the reader never recurses), and the units (book + scope) under each row. One
+  read (`GET /academic-years/:yearId/curriculum` → the tree, which the API nests)
+  and six writes: create (`POST /academic-years/:yearId/levels/:levelId/curriculum`),
+  edit (`PATCH /curriculum/:id`), delete (`DELETE /curriculum/:id`), and the unit
+  trio (`POST /curriculum/:id/units`, `PATCH /curriculum-units/:id`,
+  `DELETE /curriculum-units/:id`). A new `Curriculum` tag makes every write
+  re-read the tree, so there is no local overlay to reconcile. The exam fields
+  (grading, marks, weight) appear only while a row is examinable — a container's
+  marks live on its children, mirroring the service's rules. It **reuses reads**:
+  `useAcademicYearsQuery` from shared, and `useLevelsQuery` +
+  `useSubjectOptionsQuery`/`useBookOptionsQuery` (two whole-active-set picker
+  queries added to catalogue and exposed through its barrel, the same cross-feature
+  seam the sections picker uses).
+- **`features/timetable/`** — the timetable editor (`/timetable`, head-teacher
+  only): a section picker → a per-section weekly grid at `/timetable/:sectionId`.
+  Reads a section's slots (`GET /sections/:id/timetable`) and writes four ways —
+  create (`POST /sections/:id/timetable`), edit (`PATCH /timetable-slots/:id`),
+  delete (`DELETE /timetable-slots/:id`), all under a new `Timetable` tag — plus
+  "generate sessions" (`POST /sections/:id/sessions/generate`), a separate concern
+  in its own dialog that turns the timetable into the term's dated sessions.
+  **Teacher clash detection is server-side** (create/edit answer 409 when a
+  teacher is double-booked); the slot dialog detects the 409 **by status** and
+  shows a translated clash message — it never re-implements the rule or shows the
+  API's English detail. Separation of concerns is explicit: the page orchestrates,
+  `WeekGrid` renders, the two dialogs own their forms, and `groupByWeekday` (a pure
+  model function) does the day-grouping. Reuses reads via barrels —
+  `useGetSectionQuery` (sections), `useSubjectOptionsQuery` (catalogue), and a new
+  `useTeacherOptionsQuery` added to users; native `<input type="time">`/`date`.
+- **`features/whatsapp/`** — the WhatsApp console (`/whatsapp`, head-teacher only),
+  the last F6 screen. A `Tabs` screen: **templates** (`GET /message-templates`,
+  edit body/Meta-name/language/active via `PATCH /message-templates/:id` — `code`
+  and `channel` are read-only identity) and **campaigns** (`GET /campaigns` with
+  per-status counts). A campaign is queued (`POST /campaigns/friday-reminder`, a
+  section + target Friday) then sent (`POST /campaigns/:id/send`) — separate steps,
+  mirroring the service. New `Template`/`Campaign` tags. The send is a
+  `ConfirmDialog` (it messages real people) that shows the `SendOutcome` counts;
+  the reminder dialog loads sections **only when opened** (lazy — not needed to
+  monitor). Both surface the important 409s **by status**, translated: the send's
+  "WhatsApp not configured yet", and the reminder's coverage-too-low / duplicate.
+  Reuses `useCurrentAcademicYearQuery` (shared) and `useListSectionsQuery`
+  (sections barrel).
+
+**Verified:** lint, typecheck, build, tests all clean; **50 → 68 tests** (+1
+audit, +1 promotion, +3 users, +2 PagedList, +3 catalogue, +2 years, +2 curriculum,
++2 timetable, +2 whatsapp — edit a template, and send a campaign showing the outcome).
+
+**F6 is complete.** All fourteen destinations in the navigation registry now render
+their real screen; there are no placeholders left (verified: every registry key has
+a `BUILT_SCREENS` entry). Foundation CRUD, the curriculum
+builder, the timetable editor and the WhatsApp console are all done.
+
+**Fixed a codebase-wide dead branch:** `.unwrap()` rejects with `baseQuery`'s
+flattened `{ status, detail }`, not an `HttpError`, so `cause instanceof HttpError`
+never matched in eleven RTK dialogs — their `?? cause.detail` branch was dead and
+they always showed the generic save message. Root cause: the pattern is valid only
+where code calls `http.request` **directly** (it origin­ated in `auth.gateway.ts`,
+and is live in `import/UploadForm.tsx`'s multipart upload); it was copied into the
+RTK dialogs where the error is caught and flattened by `baseQuery` first. The dead
+branches were collapsed to the generic message (behaviour-preserving — that branch
+was already the only one taken), and the two live uses left as-is. Where a specific
+message is warranted, branch on `cause.status` as the timetable slot dialog does
+for its `409` clash. Full write-up in [memory.md](memory.md).
+
+**Cleanup done — `shared/react/PagedList`.** The list-body shape (loading →
+skeleton, error → alert, empty → the caller's EmptyState, else → `DataTable` +
+`Pagination`) is now one component. Students, sections, audit and users were
+migrated onto it (each dropped its private `<XBody>` + `TableSkeleton` — a net
+deletion), with the search/filter-aware empty state passed in as `empty`. A
+`ListSkeleton` is exported for a screen that reaches a loading state before the
+list (sections' year read). Import's `RowsTable` was left as-is: it wraps an
+inline action filter and a non-EmptyState empty message, so it does not fit the
+shell cleanly. Behaviour-preserving — all prior tests stayed green — plus 2 tests
+for `PagedList`'s own rows/empty branches. A new list screen is now a set of
+columns and an empty state, not another copy of the branching.
 
 ## Still open
 

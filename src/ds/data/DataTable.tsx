@@ -24,7 +24,20 @@ export interface DataTableProps<T> extends Omit<HTMLAttributes<HTMLDivElement>, 
   density?: Density;
   getRowKey?: (row: T, index: number) => string | number;
   rowTone?: (row: T) => RowTone | undefined;
+  /** Makes the whole row a click target (e.g. open a detail page). Clicks that
+   *  land on an interactive cell — a link, button, or the status dropdown — are
+   *  left to that control, so an inline edit never doubles as navigation. */
+  onRowClick?: (row: T) => void;
   empty?: ReactNode;
+}
+
+/** True when the click originated inside a control that owns its own behaviour,
+ *  so a row-level handler should stand down. */
+function hitInteractive(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('a,button,select,input,textarea,label,[role="button"]') !== null
+  );
 }
 
 const ROW_TONE: Record<RowTone, string> = {
@@ -51,6 +64,7 @@ export function DataTable<T>({
   density = 'comfortable',
   getRowKey,
   rowTone,
+  onRowClick,
   empty,
   className,
   ...rest
@@ -60,7 +74,7 @@ export function DataTable<T>({
 
   return (
     <div
-      className={cn('overflow-auto rounded-lg border border-subtle bg-surface', className)}
+      className={cn('overflow-auto rounded-lg border border-default bg-surface', className)}
       {...rest}
     >
       <table
@@ -78,7 +92,7 @@ export function DataTable<T>({
                 style={{ width: c.width }}
                 className={cn(
                   'sticky top-0 whitespace-nowrap border-b border-default bg-canvas',
-                  'text-xs font-semibold text-ink-500',
+                  'text-sm font-semibold text-ink-500',
                   compact ? 'h-8' : 'h-10',
                   cellPad,
                   ALIGN[c.align ?? 'start'],
@@ -101,7 +115,24 @@ export function DataTable<T>({
             rows.map((row, i) => {
               const tone = rowTone?.(row);
               return (
-                <tr key={getRowKey ? getRowKey(row, i) : i} className={tone ? ROW_TONE[tone] : undefined}>
+                <tr
+                  key={getRowKey ? getRowKey(row, i) : i}
+                  onClick={
+                    onRowClick
+                      ? (e) => {
+                          if (!hitInteractive(e.target)) onRowClick(row);
+                        }
+                      : undefined
+                  }
+                  className={cn(
+                    // Full-row hover cue — the design intends hover as pure CSS,
+                    // never a React re-render. A toned row keeps its semantic
+                    // fill; a plain row lifts to the sunken canvas on hover.
+                    'group transition-colors',
+                    tone ? ROW_TONE[tone] : 'hover:bg-canvas',
+                    onRowClick && 'cursor-pointer',
+                  )}
+                >
                   {columns.map((c) => (
                     <td
                       key={c.key}
@@ -111,7 +142,12 @@ export function DataTable<T>({
                         cellPad,
                         ALIGN[c.align ?? 'start'],
                         c.numeric && 'ef-num',
-                        c.sticky && ['sticky start-0 z-1 font-semibold', tone ? ROW_TONE[tone] : 'bg-surface'],
+                        // The sticky column paints its own opaque fill, so it has
+                        // to echo the row hover itself to stay in step.
+                        c.sticky && [
+                          'sticky start-0 z-1 font-semibold',
+                          tone ? ROW_TONE[tone] : 'bg-surface group-hover:bg-canvas',
+                        ],
                       )}
                     >
                       {c.render ? c.render(row, i) : (row as Record<string, ReactNode>)[c.key]}

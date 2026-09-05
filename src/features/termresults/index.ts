@@ -1,0 +1,1 @@
+export { TermResultsPage } from './TermResultsPage';

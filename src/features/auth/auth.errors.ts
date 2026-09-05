@@ -18,12 +18,22 @@ export abstract class AuthError extends Error {
   }
 }
 
-/** 401 on login — wrong username or password. The API deliberately does not
- *  say which, and neither does the UI. */
+/** 401 on login — wrong email or password. The API deliberately does not say
+ *  which, and neither does the UI. */
 export class InvalidCredentialsError extends AuthError {
   readonly messageKey = 'auth.errors.invalidCredentials';
   constructor() {
-    super('Invalid username or password');
+    super('Invalid email or password');
+  }
+}
+
+/** 401 on verify-otp — the code is wrong, expired, already used, or out of
+ *  attempts. Kept distinct from a credentials failure so the user is told to
+ *  re-check the code, not their password (F12). */
+export class InvalidOtpError extends AuthError {
+  readonly messageKey = 'auth.errors.invalidOtp';
+  constructor() {
+    super('Invalid or expired code');
   }
 }
 

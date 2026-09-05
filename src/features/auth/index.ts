@@ -13,6 +13,7 @@ export { AuthProvider } from './AuthProvider';
 export { ProtectedRoute } from './ProtectedRoute';
 export { RequireRole } from './RequireRole';
 export { LoginPage } from './LoginPage';
+export { ResetPasswordPage } from './ResetPasswordPage';
 export { useAuth, type AuthContextValue, type AuthStatus } from './auth-context';
 
 /* Construction — consumed only by the composition root. */
@@ -27,6 +28,7 @@ export {
   AuthError,
   AccountInactiveError,
   InvalidCredentialsError,
+  InvalidOtpError,
   NetworkError,
   SessionExpiredError,
   TooManyAttemptsError,

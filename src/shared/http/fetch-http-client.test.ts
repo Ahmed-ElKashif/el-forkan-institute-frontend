@@ -99,6 +99,34 @@ describe('401 recovery', () => {
   });
 });
 
+describe('request body', () => {
+  /* File upload: the browser must set multipart/form-data with its own boundary,
+     so the client must not stringify the body or force a JSON content type. */
+  it('sends a FormData body as multipart without a forced JSON content type', async () => {
+    const fetchMock = stubFetch(jsonResponse(200, { id: 'job1' }));
+    const client = new FetchHttpClient({ baseUrl: BASE });
+    const form = new FormData();
+    form.append('field', 'value');
+
+    await client.request({ method: 'POST', path: '/imports', body: form });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+    expect(init.body).toBe(form);
+  });
+
+  it('serialises a plain object body as JSON', async () => {
+    const fetchMock = stubFetch(jsonResponse(200, {}));
+    const client = new FetchHttpClient({ baseUrl: BASE });
+
+    await client.request({ method: 'POST', path: '/x', body: { a: 1 } });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect(init.body).toBe(JSON.stringify({ a: 1 }));
+  });
+});
+
 describe('responses', () => {
   it('returns undefined for a 204, which is what logout answers', async () => {
     stubFetch(new Response(null, { status: 204 }));

@@ -15,6 +15,6 @@ import { httpBaseQuery } from './baseQuery';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: httpBaseQuery,
-  tagTypes: ['Student', 'Section', 'Dashboard'],
+  tagTypes: ['Student', 'Section', 'Dashboard', 'Attendance', 'ExamScores', 'Eligibility', 'Import', 'Certificate', 'User', 'Catalogue', 'Calendar', 'Curriculum', 'Timetable', 'Template', 'Campaign', 'Settings', 'Exam', 'Session'],
   endpoints: () => ({}),
 });

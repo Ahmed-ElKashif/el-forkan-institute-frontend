@@ -33,7 +33,7 @@ export function Select({
         disabled={disabled}
         aria-invalid={invalid || undefined}
         className={cn(
-          'w-full appearance-none rounded-md border ps-3 pe-8 text-sm text-ink-900',
+          'w-full appearance-none rounded-md border ps-3 pe-8 text-base text-ink-900',
           size === 'sm' ? 'h-8' : 'h-10',
           disabled ? 'cursor-not-allowed bg-canvas' : 'bg-surface',
           invalid ? 'border-danger' : 'border-default',

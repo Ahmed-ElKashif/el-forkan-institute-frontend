@@ -4,9 +4,26 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { AppContainer } from '../shared/di/container';
 import { DiProvider } from '../shared/di/DiProvider';
 import { makeStore } from '../shared/api/store';
-import { AuthProvider, LoginPage, ProtectedRoute, RequireRole } from '../features/auth';
+import { AuthProvider, LoginPage, ResetPasswordPage, ProtectedRoute, RequireRole } from '../features/auth';
 import { DashboardPage } from '../features/dashboard';
-import { StudentsPage } from '../features/students';
+import { StudentsPage, StudentProfilePage } from '../features/students';
+import { SectionsPage, SectionsAdminPage } from '../features/sections';
+import { AttendanceGridPage } from '../features/attendance';
+import { ExamPickerPage, ScoreGridPage } from '../features/scores';
+import { EligibilityPage, EligibilityPrintPage } from '../features/eligibility';
+import { TermResultsPage } from '../features/termresults';
+import { SessionsPage } from '../features/sessions';
+import { ImportPage } from '../features/import';
+import { ExportsPage } from '../features/exports';
+import { CertificatesPage, CertificatePrintPage } from '../features/certificates';
+import { PromotionPage } from '../features/promotion';
+import { AuditPage } from '../features/audit';
+import { UsersPage } from '../features/users';
+import { CataloguePage } from '../features/catalogue';
+import { CurriculumPage } from '../features/curriculum';
+import { TimetableEditorPage } from '../features/timetable';
+import { WhatsAppPage } from '../features/whatsapp';
+import { SettingsPage } from '../features/settings';
 import { AppShell } from './shell/AppShell';
 import { SectionPlaceholder } from './shell/SectionPlaceholder';
 import { DESTINATIONS } from './shell/navigation';
@@ -19,6 +36,27 @@ import '../shared/i18n';
 const BUILT_SCREENS: Record<string, ReactNode> = {
   dashboard: <DashboardPage />,
   students: <StudentsPage />,
+  sections: <SectionsAdminPage />,
+  /* Attendance and scores are always done against a section, so each nav
+     destination is the section picker; a row links to the grid at
+     `/attendance/:sectionId` or `/scores/:sectionId`, wired below. The shared
+     picker only differs by where its rows point and its caption. */
+  attendance: <SectionsPage basePath="/attendance" captionKey="sections.pickForAttendance" />,
+  scores: <SectionsPage basePath="/scores" captionKey="sections.pickForScores" />,
+  /* Timetable-setting is head-teacher only; the picker route is gated by the
+     registry flag, and the per-section editor is gated below. */
+  timetable: <SectionsPage basePath="/timetable" captionKey="sections.pickForTimetable" />,
+  /* Head-teacher-only; gated in the route table via the registry's flag. */
+  imports: <ImportPage />,
+  exports: <ExportsPage />,
+  certificates: <CertificatesPage />,
+  promotion: <PromotionPage />,
+  audit: <AuditPage />,
+  users: <UsersPage />,
+  catalogue: <CataloguePage />,
+  curriculum: <CurriculumPage />,
+  whatsapp: <WhatsAppPage />,
+  settings: <SettingsPage />,
 };
 
 function screenFor(destinationKey: string): ReactNode {
@@ -50,18 +88,53 @@ export function App({ container }: { container: AppContainer }) {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             {/* Dev-only reference gallery; excluded from the production bundle. */}
             {import.meta.env.DEV ? <Route path="/ds" element={<DesignSystem />} /> : null}
 
             <Route element={<ProtectedRoute />}>
+              {/* The printable certificate renders outside the shell so the
+                  browser prints the A4 sheet alone; still signed-in and
+                  head-teacher-gated. */}
+              <Route element={<RequireRole allow="head_teacher" />}>
+                <Route path="/certificates/:id/print" element={<CertificatePrintPage />} />
+              </Route>
+              {/* The printable eligible-students roster, outside the shell like
+                  the certificate. Both roles may print it (computing and viewing
+                  eligibility is a teacher task; only override is head-only). */}
+              <Route path="/exams/:examId/eligibility/print" element={<EligibilityPrintPage />} />
               <Route element={<AppShell />}>
                 {openDestinations.map((d) => (
                   <Route key={d.key} path={d.path} element={screenFor(d.key)} />
                 ))}
+                {/* A student's profile, reached from a roster row. Both roles
+                    may open one they can reach; branch visibility is enforced in
+                    the service, as it is for the roster itself. */}
+                <Route path="/students/:id" element={<StudentProfilePage />} />
+                {/* Per-section grids reached from the pickers above. Not nav
+                    destinations, so they are declared here rather than in the
+                    registry; both roles may enter (score lock and correction are
+                    gated inside the screen, not at the route). */}
+                <Route path="/attendance/:sectionId" element={<AttendanceGridPage />} />
+                {/* A section's sessions — reschedule or cancel — reached from
+                    the attendance grid. Both roles; writes gated server-side. */}
+                <Route path="/sessions/:sectionId" element={<SessionsPage />} />
+                <Route path="/scores/:sectionId" element={<ExamPickerPage />} />
+                <Route path="/scores/exams/:examId" element={<ScoreGridPage />} />
+                {/* An exam's eligible-students list, reached from the exam
+                    picker; both roles compute, view and print it. */}
+                <Route path="/exams/:examId/eligibility" element={<EligibilityPage />} />
+                {/* A section+term's results, reached from the exam picker; both
+                    roles compute, only the head teacher finalizes (gated in the
+                    screen and again server-side). */}
+                <Route path="/term-results/:sectionId/:termId" element={<TermResultsPage />} />
                 <Route element={<RequireRole allow="head_teacher" />}>
                   {gatedDestinations.map((d) => (
                     <Route key={d.key} path={d.path} element={screenFor(d.key)} />
                   ))}
+                  {/* The per-section timetable editor, reached from the gated
+                      /timetable picker; head-teacher only, like its writes. */}
+                  <Route path="/timetable/:sectionId" element={<TimetableEditorPage />} />
                 </Route>
               </Route>
             </Route>

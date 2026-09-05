@@ -30,18 +30,28 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={cn('rounded-lg border border-subtle bg-surface px-6 py-4 shadow-card', className)}
+      className={cn(
+        'rounded-xl border border-default bg-surface p-5 shadow-card',
+        'transition-shadow duration-[var(--dur-base)] hover:shadow-raised',
+        className,
+      )}
       {...rest}
     >
-      <div className="flex items-center gap-2 text-sm text-ink-500">
-        {icon ? <Icon name={icon} size={16} /> : null}
-        <span>{label}</span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm text-ink-500">{label}</div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="ef-num text-3xl font-bold leading-tight text-ink-900">{value}</span>
+            {unit ? <span className="text-base font-semibold text-ink-500">{unit}</span> : null}
+          </div>
+        </div>
+        {icon ? (
+          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-tint text-teal-700">
+            <Icon name={icon} size={22} />
+          </span>
+        ) : null}
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="ef-num text-3xl font-bold leading-tight text-ink-900">{value}</span>
-        {unit ? <span className="text-sm text-ink-500">{unit}</span> : null}
-      </div>
-      {trend ? <div className={cn('ef-num mt-1 text-xs', TREND_TONE[trendTone])}>{trend}</div> : null}
+      {trend ? <div className={cn('ef-num mt-3 text-xs', TREND_TONE[trendTone])}>{trend}</div> : null}
     </div>
   );
 }

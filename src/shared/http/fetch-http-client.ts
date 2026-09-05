@@ -21,18 +21,24 @@ export class FetchHttpClient implements HttpClient {
   async request<T>(request: HttpRequest): Promise<T> {
     const response = await this.send(request);
 
-    if (response.status === 401 && !request.noRetry && !request.anonymous) {
-      const replayed = await this.refreshAndReplay(request);
-      if (replayed) return this.parse<T>(replayed);
-    }
+    const final =
+      response.status === 401 && !request.noRetry && !request.anonymous
+        ? ((await this.refreshAndReplay(request)) ?? response)
+        : response;
 
-    return this.parse<T>(response);
+    return request.responseType === 'blob'
+      ? this.parseBlob<T>(final)
+      : this.parse<T>(final);
   }
 
   private async send(request: HttpRequest): Promise<Response> {
     const headers: Record<string, string> = { ...request.headers };
+    const isMultipart = request.body instanceof FormData;
 
-    if (request.body !== undefined) {
+    /* JSON for ordinary bodies. For FormData (a file upload) the browser must
+       set `Content-Type: multipart/form-data` itself, including the boundary —
+       setting it here would send a body the server cannot parse. */
+    if (request.body !== undefined && !isMultipart) {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -45,7 +51,12 @@ export class FetchHttpClient implements HttpClient {
       return await fetch(`${this.options.baseUrl}${request.path}`, {
         method: request.method,
         headers,
-        body: request.body === undefined ? undefined : JSON.stringify(request.body),
+        body:
+          request.body === undefined
+            ? undefined
+            : isMultipart
+              ? (request.body as FormData)
+              : JSON.stringify(request.body),
         credentials: request.withCredentials ? 'include' : 'same-origin',
       });
     } catch (cause) {
@@ -91,6 +102,25 @@ export class FetchHttpClient implements HttpClient {
     /* A success body that will not parse is a real fault. Returning null here
        would hand the caller a silently wrong value instead. */
     return JSON.parse(text) as T;
+  }
+
+  /** For a file download: the body is bytes, not JSON. An error still carries a
+   *  JSON body, so errors are read as text and translated like any other. */
+  private async parseBlob<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      let text = '';
+      try {
+        text = await response.text();
+      } catch {
+        /* An error with no readable body is still an error with a status. */
+      }
+      throw new HttpError(response.status, parseJson<ApiErrorBody>(text));
+    }
+    try {
+      return (await response.blob()) as T;
+    } catch (cause) {
+      throw new NetworkFailureError(cause);
+    }
   }
 }
 

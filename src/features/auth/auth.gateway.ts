@@ -1,12 +1,21 @@
 import {
   AccountInactiveError,
   InvalidCredentialsError,
+  InvalidOtpError,
   NetworkError,
   SessionExpiredError,
   TooManyAttemptsError,
   UnexpectedAuthError,
 } from './auth.errors';
-import type { AuthUser, Credentials, LoginResult } from './auth.model';
+import type {
+  AuthUser,
+  Credentials,
+  LoginChallenge,
+  LoginResult,
+  OtpVerification,
+  PasswordResetConfirm,
+  PasswordResetRequest,
+} from './auth.model';
 import { HttpError, NetworkFailureError } from '../../shared/http/http.errors';
 import type { HttpClient } from '../../shared/http/http.port';
 
@@ -33,14 +42,28 @@ interface RefreshResponse {
 export class AuthGateway {
   constructor(private readonly http: HttpClient) {}
 
-  async login(credentials: Credentials): Promise<LoginResult> {
+  /** First factor. Returns an OTP challenge, not a session — no cookie is set
+   *  here; that happens in {@link verifyOtp}. */
+  async login(credentials: Credentials): Promise<LoginChallenge> {
     return this.translating('credentials', () =>
-      this.http.request<LoginResult>({
+      this.http.request<LoginChallenge>({
         method: 'POST',
         path: '/auth/login',
         body: credentials,
-        /* The response sets the refresh cookie, so the browser must be
-           allowed to store it. */
+        anonymous: true,
+        noRetry: true,
+      }),
+    );
+  }
+
+  /** Second factor. The response sets the refresh cookie, so the browser must
+   *  be allowed to store it. */
+  async verifyOtp(verification: OtpVerification): Promise<LoginResult> {
+    return this.translating('otp', () =>
+      this.http.request<LoginResult>({
+        method: 'POST',
+        path: '/auth/verify-otp',
+        body: verification,
         withCredentials: true,
         anonymous: true,
         noRetry: true,
@@ -72,6 +95,36 @@ export class AuthGateway {
 
       return accessToken;
     });
+  }
+
+  /** Forgot-password, step one. Always resolves for a well-formed request — the
+   *  API returns a challenge id whether or not the email exists. */
+  async requestPasswordReset(
+    request: PasswordResetRequest,
+  ): Promise<LoginChallenge> {
+    return this.translating('credentials', () =>
+      this.http.request<LoginChallenge>({
+        method: 'POST',
+        path: '/auth/password-reset/request',
+        body: request,
+        anonymous: true,
+        noRetry: true,
+      }),
+    );
+  }
+
+  /** Forgot-password, step two. A 401 here is a bad/expired code (context
+   *  'otp'). No session is issued — the user then signs in normally. */
+  async confirmPasswordReset(confirm: PasswordResetConfirm): Promise<void> {
+    await this.translating('otp', () =>
+      this.http.request<void>({
+        method: 'POST',
+        path: '/auth/password-reset/confirm',
+        body: confirm,
+        anonymous: true,
+        noRetry: true,
+      }),
+    );
   }
 
   async logout(): Promise<void> {
@@ -106,7 +159,7 @@ export class AuthGateway {
  *  also for four distinct refresh failures ("Invalid refresh token",
  *  "Refresh token expired", "Refresh token reuse detected", "Account no longer
  *  active"), so matching on the text would misfile the last of those. */
-type Context = 'credentials' | 'session';
+type Context = 'credentials' | 'otp' | 'session';
 
 /** The single translation table from transport failure to domain meaning.
  *
@@ -123,9 +176,9 @@ function toAuthError(error: unknown, context: Context): Error {
 
   switch (error.status) {
     case 401:
-      return context === 'credentials'
-        ? new InvalidCredentialsError()
-        : new SessionExpiredError();
+      if (context === 'credentials') return new InvalidCredentialsError();
+      if (context === 'otp') return new InvalidOtpError();
+      return new SessionExpiredError();
     case 403: {
       const detail = error.detail.toLowerCase();
       if (detail.includes('inactive')) return new AccountInactiveError();
