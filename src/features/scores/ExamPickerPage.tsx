@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Alert, Badge, Button, DataTable, EmptyState, Icon, Skeleton, Toast, type Column } from '../../ds';
+import { Alert, Badge, Button, DataTable, EmptyState, Icon, Skeleton, Toast, type ActionItem, type Column } from '../../ds';
 import { useGetSectionQuery } from '../sections';
 import { useAcademicYearQuery, defaultTerm } from '../../shared/api/calendar';
 import { TermPicker } from '../../shared/react/TermPicker';
@@ -90,6 +90,7 @@ export function ExamPickerPage() {
 
 function ExamList({ levelId, gender, termId }: { levelId: number; gender: string; termId: number }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const query = useListExamsQuery({ termId, levelId });
 
   if (query.isLoading) return <ListSkeleton />;
@@ -134,23 +135,22 @@ function ExamList({ levelId, gender, termId }: { levelId: number; gender: string
           <Badge tone="success">{t('scores.open')}</Badge>
         ),
     },
-    {
-      key: 'eligibility',
-      header: '',
-      align: 'end',
-      render: (exam) => (
-        <Link
-          to={`/exams/${exam.id}/eligibility`}
-          className="inline-flex items-center gap-1 font-semibold text-brand-text hover:underline"
-        >
-          <Icon name="clipboard-list" size={14} />
-          {t('eligibility.link')}
-        </Link>
-      ),
-    },
   ];
 
-  return <DataTable columns={columns} rows={exams} getRowKey={(exam) => exam.id} />;
+  const rowActions = (exam: Exam): ActionItem[] => [
+    { key: 'scores', label: t('scores.openGrid'), icon: 'clipboard-check', onSelect: () => navigate(`/scores/exams/${exam.id}`) },
+    { key: 'eligibility', label: t('eligibility.link'), icon: 'clipboard-list', onSelect: () => navigate(`/exams/${exam.id}/eligibility`) },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={exams}
+      getRowKey={(exam) => exam.id}
+      onRowClick={(exam) => navigate(`/scores/exams/${exam.id}`)}
+      rowActions={rowActions}
+    />
+  );
 }
 
 function ListSkeleton() {

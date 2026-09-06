@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Badge, Card, IconButton, formatNumber, formatScore } from '../../ds';
+import { ActionMenu, Badge, Card, formatNumber, formatScore, useRowContextMenu, type ActionItem } from '../../ds';
 import type { CurriculumRow, CurriculumTreeNode, CurriculumUnit } from './curriculum.model';
 
 /** The actions a row and its units raise; the page owns the dialogs and writes. */
@@ -33,8 +33,16 @@ export function CurriculumRowCard({ node, actions }: { node: CurriculumTreeNode;
 
 function RowBody({ row, isChild = false, actions }: { row: CurriculumRow; isChild?: boolean; actions: RowActions }) {
   const { t } = useTranslation();
+  const rowItems: ActionItem[] = [
+    { key: 'addUnit', label: t('curriculum.units.add'), icon: 'plus', onSelect: () => actions.onAddUnit(row) },
+    ...(!isChild ? [{ key: 'addChild', label: t('curriculum.addChild'), icon: 'rows-3' as const, onSelect: () => actions.onAddChild(row) }] : []),
+    { key: 'edit', label: t('curriculum.edit'), icon: 'pencil', onSelect: () => actions.onEdit(row) },
+    { key: 'delete', label: t('curriculum.delete'), icon: 'trash', tone: 'danger', onSelect: () => actions.onDelete(row) },
+  ];
+  const { onContextMenu, menu } = useRowContextMenu(rowItems);
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" onContextMenu={onContextMenu}>
+      {menu}
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -59,36 +67,44 @@ function RowBody({ row, isChild = false, actions }: { row: CurriculumRow; isChil
             </p>
           ) : null}
         </div>
-        <div className="flex shrink-0 gap-1">
-          <IconButton icon="plus" label={t('curriculum.units.add')} size="sm" onClick={() => actions.onAddUnit(row)} />
-          {!isChild ? (
-            <IconButton icon="rows-3" label={t('curriculum.addChild')} size="sm" onClick={() => actions.onAddChild(row)} />
-          ) : null}
-          <IconButton icon="pencil" label={t('curriculum.edit')} size="sm" onClick={() => actions.onEdit(row)} />
-          <IconButton icon="trash" label={t('curriculum.delete')} size="sm" onClick={() => actions.onDelete(row)} />
+        <div className="shrink-0">
+          <ActionMenu items={rowItems} />
         </div>
       </div>
 
       {row.units.length > 0 ? (
         <ul className="m-0 list-none space-y-1 p-0">
           {row.units.map((unit) => (
-            <li key={unit.id} className="flex items-start gap-2 rounded-md bg-canvas px-3 py-2 text-sm">
-              <div className="min-w-0 flex-1">
-                <span className="text-ink-800">{unit.syllabusScopeAr}</span>
-                {unit.unitLabel ? <span className="text-ink-500"> · {unit.unitLabel}</span> : null}
-                {unit.bookTitleAr ? <span className="text-ink-500"> — {unit.bookTitleAr}</span> : null}
-                {unit.alternativeGroup != null ? (
-                  <Badge tone="neutral" size="sm" className="ms-2">{t('curriculum.units.alt', { n: formatNumber(unit.alternativeGroup) })}</Badge>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <IconButton icon="pencil" label={t('curriculum.units.edit')} size="sm" onClick={() => actions.onEditUnit(row, unit)} />
-                <IconButton icon="trash" label={t('curriculum.units.delete')} size="sm" onClick={() => actions.onDeleteUnit(unit)} />
-              </div>
-            </li>
+            <UnitRow key={unit.id} row={row} unit={unit} actions={actions} />
           ))}
         </ul>
       ) : null}
     </div>
+  );
+}
+
+/** One syllabus unit under a مادة, with the same 3-dots + right-click menu. */
+function UnitRow({ row, unit, actions }: { row: CurriculumRow; unit: CurriculumUnit; actions: RowActions }) {
+  const { t } = useTranslation();
+  const items: ActionItem[] = [
+    { key: 'edit', label: t('curriculum.units.edit'), icon: 'pencil', onSelect: () => actions.onEditUnit(row, unit) },
+    { key: 'delete', label: t('curriculum.units.delete'), icon: 'trash', tone: 'danger', onSelect: () => actions.onDeleteUnit(unit) },
+  ];
+  const { onContextMenu, menu } = useRowContextMenu(items);
+  return (
+    <li className="flex items-start gap-2 rounded-md bg-canvas px-3 py-2 text-sm" onContextMenu={onContextMenu}>
+      {menu}
+      <div className="min-w-0 flex-1">
+        <span className="text-ink-800">{unit.syllabusScopeAr}</span>
+        {unit.unitLabel ? <span className="text-ink-500"> · {unit.unitLabel}</span> : null}
+        {unit.bookTitleAr ? <span className="text-ink-500"> — {unit.bookTitleAr}</span> : null}
+        {unit.alternativeGroup != null ? (
+          <Badge tone="neutral" size="sm" className="ms-2">{t('curriculum.units.alt', { n: formatNumber(unit.alternativeGroup) })}</Badge>
+        ) : null}
+      </div>
+      <div className="shrink-0">
+        <ActionMenu items={items} />
+      </div>
+    </li>
   );
 }

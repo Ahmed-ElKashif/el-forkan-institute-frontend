@@ -82,7 +82,7 @@ export function AssignYearDialog({
           >
             {t('students.profile.assignYear.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('students.profile.assignYear.cancel')}
           </Button>
         </>

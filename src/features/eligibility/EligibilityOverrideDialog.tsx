@@ -56,7 +56,7 @@ export function EligibilityOverrideDialog({
           <Button variant="primary" icon="circle-check" onClick={submit} disabled={!canSubmit} loading={overrideState.isLoading}>
             {t('eligibility.override.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('eligibility.override.cancel')}
           </Button>
         </>

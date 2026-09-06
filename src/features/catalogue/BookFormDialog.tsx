@@ -47,7 +47,7 @@ export function BookFormDialog({ book, onClose, onSaved }: { book: Book | null; 
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={busy}>
             {t('catalogue.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('catalogue.cancel')}
           </Button>
         </>

@@ -52,7 +52,7 @@ export function TimetableEditorPage() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" icon="chevron-right" iconMirror onClick={() => navigate('/timetable')}>
+        <Button variant="secondary" icon="chevron-right" iconMirror onClick={() => navigate('/timetable')}>
           {t('timetable.back')}
         </Button>
         <h1 className="m-0 text-lg font-bold text-ink-900">

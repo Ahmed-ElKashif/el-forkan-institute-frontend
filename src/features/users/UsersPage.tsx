@@ -9,11 +9,11 @@ import {
   Dialog,
   EmptyState,
   Field,
-  IconButton,
   Input,
   SearchInput,
   Select,
   Toast,
+  type ActionItem,
   type BadgeProps,
   type Column,
 } from '../../ds';
@@ -82,18 +82,12 @@ export function UsersPage() {
       header: t('users.columns.status'),
       render: (u) => <Badge tone={u.isActive ? 'success' : 'neutral'}>{t(u.isActive ? 'users.status.active' : 'users.status.inactive')}</Badge>,
     },
-    {
-      key: 'actions',
-      header: '',
-      align: 'end',
-      render: (u) => (
-        <div className="flex justify-end gap-1">
-          <IconButton icon="pencil" label={t('users.edit')} size="sm" onClick={() => setForm(u)} />
-          <IconButton icon="lock" label={t('users.reset')} size="sm" onClick={() => setResetting(u)} />
-          <IconButton icon="trash" label={t('users.delete')} size="sm" onClick={() => setDeleting(u)} />
-        </div>
-      ),
-    },
+  ];
+
+  const rowActions = (u: User): ActionItem[] => [
+    { key: 'edit', label: t('users.edit'), icon: 'pencil', onSelect: () => setForm(u) },
+    { key: 'reset', label: t('users.reset'), icon: 'lock', onSelect: () => setResetting(u) },
+    { key: 'delete', label: t('users.delete'), icon: 'trash', tone: 'danger', onSelect: () => setDeleting(u) },
   ];
 
   return (
@@ -127,6 +121,8 @@ export function UsersPage() {
         errorTitle={t('users.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(u) => setForm(u)}
+        rowActions={rowActions}
         empty={<EmptyState icon="user" title={t('users.empty.title')} description={t('users.empty.description')} />}
       />
 
@@ -198,7 +194,7 @@ function ResetPasswordDialog({ user, onClose, onDone }: { user: User; onClose: (
           <Button variant="primary" onClick={submit} loading={isLoading} disabled={password.trim() === '' || isLoading}>
             {t('users.reset')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('users.form.cancel')}
           </Button>
         </>

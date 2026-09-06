@@ -7,15 +7,13 @@ import {
   Button,
   DataTable,
   EmptyState,
-  IconButton,
-  Select,
   Skeleton,
   StatCard,
   Toast,
   formatNumber,
+  type ActionItem,
   type BadgeProps,
   type Column,
-  type SelectOption,
 } from '../../ds';
 import { useAuth } from '../auth';
 import { useScoreGridQuery } from '../scores';
@@ -78,12 +76,6 @@ export function EligibilityPage() {
     (row) => filter === 'all' || (filter === 'eligible') === row.isEligible,
   );
 
-  const filterOptions: SelectOption[] = [
-    { value: 'all', label: t('eligibility.filter.all') },
-    { value: 'eligible', label: t('eligibility.filter.eligible') },
-    { value: 'ineligible', label: t('eligibility.filter.ineligible') },
-  ];
-
   const columns: Column<EligibilityRow>[] = [
     { key: 'name', header: t('eligibility.columns.name'), sticky: true, render: (row) => row.studentName },
     { key: 'code', header: t('eligibility.columns.code'), numeric: true, render: (row) => row.studentCode },
@@ -110,24 +102,14 @@ export function EligibilityPage() {
         </span>
       ),
     },
-    ...(isHead
-      ? [
-          {
-            key: 'override',
-            header: '',
-            align: 'end' as const,
-            render: (row: EligibilityRow) => (
-              <IconButton
-                icon="pencil"
-                label={t('eligibility.override.action')}
-                size="sm"
-                onClick={() => setOverriding(row)}
-              />
-            ),
-          },
-        ]
-      : []),
   ];
+
+  // Only the head teacher may override a verdict — so only they get a row menu.
+  const rowActions = isHead
+    ? (row: EligibilityRow): ActionItem[] => [
+        { key: 'override', label: t('eligibility.override.action'), icon: 'pencil', onSelect: () => setOverriding(row) },
+      ]
+    : undefined;
 
   if (list.isLoading) return <ListSkeleton />;
   if (list.isError) return <Alert tone="danger" title={t('eligibility.error')} />;
@@ -168,26 +150,41 @@ export function EligibilityPage() {
         />
       ) : (
         <>
+          {/* The three tiles are the filter: click one to narrow the list, the
+              active one stays highlighted. Fewer controls, and the count you act
+              on is the control you press. */}
           <div className="grid gap-3 sm:grid-cols-3">
-            <StatCard icon="users" label={t('eligibility.total')} value={formatNumber(rows.length)} />
-            <StatCard icon="circle-check" label={t('eligibility.eligible')} value={formatNumber(eligibleCount)} />
-            <StatCard icon="circle-x" label={t('eligibility.ineligible')} value={formatNumber(rows.length - eligibleCount)} />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Select
-              aria-label={t('eligibility.filter.label')}
-              value={filter}
-              options={filterOptions}
-              onChange={(e) => setFilter(e.target.value as EligibilityFilter)}
-              wrapperClassName="w-48"
+            <StatCard
+              icon="users"
+              label={t('eligibility.total')}
+              value={formatNumber(rows.length)}
+              interactive
+              active={filter === 'all'}
+              onClick={() => setFilter('all')}
             />
-            <span className="text-sm text-ink-500">
-              {t('eligibility.showing', { count: formatNumber(shown.length) })}
-            </span>
+            <StatCard
+              icon="circle-check"
+              label={t('eligibility.eligible')}
+              value={formatNumber(eligibleCount)}
+              interactive
+              active={filter === 'eligible'}
+              onClick={() => setFilter('eligible')}
+            />
+            <StatCard
+              icon="circle-x"
+              label={t('eligibility.ineligible')}
+              value={formatNumber(rows.length - eligibleCount)}
+              interactive
+              active={filter === 'ineligible'}
+              onClick={() => setFilter('ineligible')}
+            />
           </div>
 
-          <DataTable columns={columns} rows={shown} getRowKey={(row) => row.id} />
+          <p className="m-0 text-sm text-ink-500">
+            {t('eligibility.showing', { count: formatNumber(shown.length) })}
+          </p>
+
+          <DataTable columns={columns} rows={shown} getRowKey={(row) => row.id} rowActions={rowActions} />
         </>
       )}
 

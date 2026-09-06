@@ -69,7 +69,7 @@ export function SectionTeachersDialog({
       onClose={onClose}
       width={520}
       footer={
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose}>
           {t('sections.teachers.done')}
         </Button>
       }

@@ -25,7 +25,12 @@ export function Breadcrumbs({ items = [], className, ...rest }: BreadcrumbsProps
           {n === items.length - 1 ? (
             <span className="font-semibold text-ink-700">{item.label}</span>
           ) : (
-            <a href={item.href ?? '#'} className="text-inherit">
+            // A trail link reads as a link: brand colour + underline on hover,
+            // so it is not mistaken for the plain-grey trail/separators.
+            <a
+              href={item.href ?? '#'}
+              className="rounded-sm text-brand-text hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
               {item.label}
             </a>
           )}

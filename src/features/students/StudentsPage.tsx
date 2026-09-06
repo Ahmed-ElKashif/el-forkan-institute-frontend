@@ -135,13 +135,20 @@ export function StudentsPage() {
             onChange={(e) => onLevel(e.target.value)}
             wrapperClassName="w-40"
           />
-          <Select
-            aria-label={t('students.filters.group')}
-            value={gender ?? ''}
-            options={genderOptions}
-            onChange={(e) => onGender(e.target.value)}
-            wrapperClassName="w-40"
-          />
+          {/* The women's/men's group is a 3-way toggle — pressable chips read
+              faster than a dropdown, and the active group stays highlighted. */}
+          <div className="flex items-center gap-1.5" role="group" aria-label={t('students.filters.group')}>
+            {genderOptions.map((option) => (
+              <Badge
+                key={option.value === '' ? 'all' : option.value}
+                pressable
+                active={(gender ?? '') === option.value}
+                onClick={() => onGender(String(option.value))}
+              >
+                {option.label}
+              </Badge>
+            ))}
+          </div>
         </div>
         {roster ? (
           <span className="whitespace-nowrap text-sm text-ink-500">

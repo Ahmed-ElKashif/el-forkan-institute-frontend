@@ -56,7 +56,8 @@ describe('SessionsPage', () => {
     const user = userEvent.setup();
     await screen.findByText('النحو');
 
-    await user.click(screen.getByLabelText('تعديل الحصة'));
+    await user.click(screen.getByRole('button', { name: 'إجراءات' }));
+    await user.click(screen.getByRole('menuitem', { name: 'تعديل الحصة' }));
     // Selects in the dialog, in order: mode, status.
     await user.selectOptions(screen.getAllByRole('combobox')[1], 'cancelled');
     await user.type(await screen.findByLabelText('سبب الإلغاء'), 'ظرف طارئ');

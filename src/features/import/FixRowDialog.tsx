@@ -52,7 +52,7 @@ export function FixRowDialog({
           <Button variant="primary" onClick={submit} loading={isLoading} disabled={isLoading}>
             {t('import.fix.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('import.fix.cancel')}
           </Button>
         </>

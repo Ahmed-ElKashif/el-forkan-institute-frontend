@@ -82,7 +82,8 @@ describe('UsersPage', () => {
     const http = renderUsers({ 'DELETE /users/u1': null });
     await screen.findByText('أحمد المعلّم');
 
-    await userEvent.click(screen.getByRole('button', { name: 'حذف' })); // row action
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' })); // row 3-dots menu
+    await userEvent.click(screen.getByRole('menuitem', { name: 'حذف' }));
     expect((lastButton('حذف') as HTMLButtonElement).disabled).toBe(true);
     await userEvent.type(screen.getByRole('textbox'), 'انتهاء التعاقد');
     await userEvent.click(lastButton('حذف'));

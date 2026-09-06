@@ -4,9 +4,9 @@ import {
   Badge,
   Button,
   EmptyState,
-  IconButton,
   Toast,
   formatNumber,
+  type ActionItem,
   type BadgeProps,
   type Column,
 } from '../../ds';
@@ -90,17 +90,11 @@ export function SectionsAdminPage() {
         );
       },
     },
-    {
-      key: 'actions',
-      header: '',
-      align: 'end',
-      render: (s) => (
-        <span className="inline-flex gap-1">
-          <IconButton icon="user" label={t('sections.admin.manageTeachers')} size="sm" onClick={() => setTeachersFor(s.id)} />
-          <IconButton icon="pencil" label={t('sections.admin.edit')} size="sm" onClick={() => setForm(s)} />
-        </span>
-      ),
-    },
+  ];
+
+  const rowActions = (s: Section): ActionItem[] => [
+    { key: 'teachers', label: t('sections.admin.manageTeachers'), icon: 'user', onSelect: () => setTeachersFor(s.id) },
+    { key: 'edit', label: t('sections.admin.edit'), icon: 'pencil', onSelect: () => setForm(s) },
   ];
 
   return (
@@ -122,6 +116,8 @@ export function SectionsAdminPage() {
         errorTitle={t('sections.admin.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(s) => setForm(s)}
+        rowActions={rowActions}
         empty={
           <EmptyState
             icon="book-open"

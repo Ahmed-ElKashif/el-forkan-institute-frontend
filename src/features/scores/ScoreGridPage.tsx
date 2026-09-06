@@ -7,13 +7,13 @@ import {
   Button,
   Checkbox,
   DataTable,
-  IconButton,
   LockBanner,
   RoleGate,
   ScoreInput,
   Skeleton,
   Toast,
   formatScore,
+  type ActionItem,
   type BadgeProps,
   type Column,
 } from '../../ds';
@@ -108,16 +108,18 @@ export function ScoreGridPage() {
   if (grid.isLoading && !gridData) return <GridSkeleton />;
   if (grid.isError || !gridData) return <Alert tone="danger" title={t('scores.error')} />;
 
-  const columns = buildColumns({
-    t,
-    maxScore,
-    isLocked,
-    isHeadTeacher,
-    draftOf,
-    setScore,
-    setAbsent,
-    onCorrect: setCorrecting,
-  });
+  const columns = buildColumns({ t, maxScore, isLocked, draftOf, setScore, setAbsent });
+
+  // R8: once locked, correction is the only way to change a grade, and only the
+  // head teacher may — offered as the row's action menu. A row with no stored
+  // result has nothing to correct yet.
+  const rowActions =
+    isLocked && isHeadTeacher
+      ? (row: ScoreRow): ActionItem[] =>
+          row.resultId != null
+            ? [{ key: 'correct', label: t('scores.correction.open'), icon: 'pencil', onSelect: () => setCorrecting(row) }]
+            : []
+      : undefined;
 
   return (
     <section className="space-y-4">
@@ -141,7 +143,7 @@ export function ScoreGridPage() {
       />
 
       <div className={grid.isFetching ? 'opacity-60 transition-opacity' : undefined} aria-busy={grid.isFetching}>
-        <DataTable density="compact" columns={columns} rows={rows} getRowKey={(row) => row.enrollmentId} />
+        <DataTable density="compact" columns={columns} rows={rows} getRowKey={(row) => row.enrollmentId} rowActions={rowActions} />
       </div>
 
       {!isLocked ? (
@@ -177,19 +179,17 @@ export function ScoreGridPage() {
 }
 
 /** The grid's columns. Extracted so the page component stays readable: student,
- *  score, absent, result, and — only when locked and head teacher — a correct
- *  action. */
+ *  score, absent, and result. The head-teacher correction (when locked) is a
+ *  row action on the table, not a column. */
 function buildColumns(config: {
   t: (key: string, opts?: Record<string, unknown>) => string;
   maxScore: number;
   isLocked: boolean;
-  isHeadTeacher: boolean;
   draftOf: (row: ScoreRow) => ScoreDraft;
   setScore: (row: ScoreRow, value: string) => void;
   setAbsent: (row: ScoreRow, absent: boolean) => void;
-  onCorrect: (row: ScoreRow) => void;
 }): Column<ScoreRow>[] {
-  const { t, maxScore, isLocked, isHeadTeacher, draftOf, setScore, setAbsent, onCorrect } = config;
+  const { t, maxScore, isLocked, draftOf, setScore, setAbsent } = config;
 
   const columns: Column<ScoreRow>[] = [
     {
@@ -241,20 +241,6 @@ function buildColumns(config: {
       render: (row) => <Badge tone={RESULT_TONE[row.result]}>{t(`scores.result.${row.result}`)}</Badge>,
     },
   ];
-
-  // R8: correction is the only way to change a grade once locked, and only the
-  // head teacher may. A row with no stored result has nothing to correct yet.
-  if (isLocked && isHeadTeacher) {
-    columns.push({
-      key: 'correct',
-      header: '',
-      align: 'center',
-      render: (row) =>
-        row.resultId != null ? (
-          <IconButton icon="pencil" label={t('scores.correction.open')} size="sm" onClick={() => onCorrect(row)} />
-        ) : null,
-    });
-  }
 
   return columns;
 }

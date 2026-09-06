@@ -91,7 +91,7 @@ export function UserFormDialog({
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={busy}>
             {t('users.form.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('users.form.cancel')}
           </Button>
         </>

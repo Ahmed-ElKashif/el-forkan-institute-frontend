@@ -15,6 +15,7 @@ export { formatHijriDate, formatNumber, formatPercent, formatScore } from './for
 export { Icon, type IconName, type IconProps } from './core/Icon';
 export { Button, type ButtonProps } from './core/Button';
 export { IconButton, type IconButtonProps } from './core/IconButton';
+export { ActionMenu, ContextMenu, useRowContextMenu, type ActionItem } from './core/Menu';
 export { Badge, type BadgeProps } from './core/Badge';
 export { Card, type CardProps } from './core/Card';
 export { StatCard, type StatCardProps } from './core/StatCard';

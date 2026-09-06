@@ -7,10 +7,10 @@ import {
   Card,
   DataTable,
   EmptyState,
-  IconButton,
   Skeleton,
   Toast,
   formatNumber,
+  type ActionItem,
   type Column,
 } from '../../ds';
 import { useCurrentAcademicYearQuery } from '../../shared/api/calendar';
@@ -67,14 +67,10 @@ export function SettingsPage() {
         </Badge>
       ),
     },
-    {
-      key: 'edit',
-      header: '',
-      align: 'end',
-      render: (p) => (
-        <IconButton icon="pencil" label={t('settings.attendance.edit')} size="sm" onClick={() => setDialog(p)} />
-      ),
-    },
+  ];
+
+  const rowActions = (p: AttendancePolicy): ActionItem[] => [
+    { key: 'edit', label: t('settings.attendance.edit'), icon: 'pencil', onSelect: () => setDialog(p) },
   ];
 
   return (
@@ -107,7 +103,7 @@ export function SettingsPage() {
             />
           </div>
         ) : (
-          <DataTable columns={columns} rows={rows} getRowKey={(p) => p.id} className="border-0" />
+          <DataTable columns={columns} rows={rows} getRowKey={(p) => p.id} className="border-0" onRowClick={(p) => setDialog(p)} rowActions={rowActions} />
         )}
       </Card>
 

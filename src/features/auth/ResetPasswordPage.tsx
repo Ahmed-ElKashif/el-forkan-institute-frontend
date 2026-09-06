@@ -112,7 +112,7 @@ export function ResetPasswordPage() {
             <Button type="submit" size="lg" fullWidth icon="circle-check" loading={submitting}>
               {submitting ? t('auth.reset.saving') : t('auth.reset.save')}
             </Button>
-            <Button type="button" variant="ghost" fullWidth onClick={() => navigate('/login')} disabled={submitting}>
+            <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/login')} disabled={submitting}>
               {t('auth.reset.cancel')}
             </Button>
           </form>
@@ -135,7 +135,7 @@ export function ResetPasswordPage() {
             <Button type="submit" size="lg" fullWidth icon="lock-open" loading={submitting}>
               {submitting ? t('auth.reset.sending') : t('auth.reset.send')}
             </Button>
-            <Button type="button" variant="ghost" fullWidth onClick={() => navigate('/login')} disabled={submitting}>
+            <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/login')} disabled={submitting}>
               {t('auth.reset.cancel')}
             </Button>
           </form>
