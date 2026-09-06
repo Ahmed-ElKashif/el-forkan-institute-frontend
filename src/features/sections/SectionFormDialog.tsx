@@ -98,7 +98,7 @@ export function SectionFormDialog({
           <Button variant="primary" icon="circle-check" onClick={submit} disabled={!canSubmit} loading={busy}>
             {t('sections.form.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('sections.form.cancel')}
           </Button>
         </>

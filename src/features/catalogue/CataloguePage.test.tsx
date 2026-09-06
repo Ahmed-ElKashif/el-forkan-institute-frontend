@@ -60,9 +60,8 @@ describe('CataloguePage', () => {
   it("edits a level's flags", async () => {
     const http = renderCatalogue({ 'PATCH /levels/1': { ...LEVEL, isOptional: true } });
     await userEvent.click(screen.getByRole('tab', { name: 'المستويات' }));
-    await screen.findByText('المستوى الأول');
-
-    await userEvent.click(screen.getByRole('button', { name: 'تعديل' }));
+    // The whole row opens the editor now; the same action is in its 3-dots menu.
+    await userEvent.click(await screen.findByText('المستوى الأول'));
     await userEvent.click(screen.getByRole('switch', { name: 'اختياري' }));
     await userEvent.click(screen.getByRole('button', { name: 'حفظ' }));
 

@@ -124,7 +124,8 @@ describe('StudentsPage', () => {
     });
     await screen.findByText('أحمد سالم عبد الله');
 
-    await userEvent.selectOptions(screen.getByLabelText('المجموعة'), 'female');
+    // The group filter is a set of pressable chips now; click the girls chip.
+    await userEvent.click(screen.getByRole('button', { name: 'مجموعة البنات' }));
 
     await waitFor(() => expect(http.countOf(listKey({ gender: 'female' }))).toBe(1));
   });

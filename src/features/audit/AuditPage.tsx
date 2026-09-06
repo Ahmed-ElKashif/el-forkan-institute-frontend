@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Dialog, EmptyState, IconButton, SearchInput, type Column } from '../../ds';
+import { Badge, Dialog, EmptyState, SearchInput, type ActionItem, type Column } from '../../ds';
 import { useDebouncedValue } from '../../shared/react/useDebouncedValue';
 import { PagedList } from '../../shared/react/PagedList';
 import { useAuditLogsQuery } from './audit.api';
@@ -38,12 +38,10 @@ export function AuditPage() {
         </span>
       ),
     },
-    {
-      key: 'details',
-      header: '',
-      align: 'end',
-      render: (r) => <IconButton icon="scroll-text" label={t('audit.details')} size="sm" onClick={() => setViewing(r)} />,
-    },
+  ];
+
+  const rowActions = (r: AuditLog): ActionItem[] => [
+    { key: 'details', label: t('audit.details'), icon: 'scroll-text', onSelect: () => setViewing(r) },
   ];
 
   return (
@@ -66,6 +64,8 @@ export function AuditPage() {
         density="compact"
         page={page}
         onPage={setPage}
+        onRowClick={(r) => setViewing(r)}
+        rowActions={rowActions}
         empty={
           <EmptyState
             icon="scroll-text"

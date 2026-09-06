@@ -6,12 +6,12 @@ import {
   Button,
   CommitBar,
   DataTable,
-  IconButton,
   Pagination,
   Select,
   Skeleton,
   Toast,
   formatNumber,
+  type ActionItem,
   type BadgeProps,
   type CommitCount,
   type Column,
@@ -82,7 +82,7 @@ export function ImportPreview({ jobId, onReset }: { jobId: string; onReset: () =
             {t('import.rowsTotal', { count: formatNumber(job.data.totalRows ?? 0) })}
           </p>
         </div>
-        <Button variant="ghost" icon="x" onClick={onReset}>
+        <Button variant="secondary" icon="x" onClick={onReset}>
           {t('import.discard')}
         </Button>
       </header>
@@ -133,12 +133,10 @@ function RowsTable({
         r.action ? <Badge tone={ACTION_TONE[r.action]}>{t(`import.action.${r.action}`)}</Badge> : <span className="text-ink-400">—</span>,
     },
     { key: 'error', header: t('import.columns.error'), render: (r) => (r.errorMessage ? <span className="text-danger">{r.errorMessage}</span> : null) },
-    {
-      key: 'fix',
-      header: '',
-      align: 'end',
-      render: (r) => <IconButton icon="pencil" label={t('import.fix.open')} size="sm" onClick={() => setFixing(r)} />,
-    },
+  ];
+
+  const rowActions = (r: ImportRow): ActionItem[] => [
+    { key: 'fix', label: t('import.fix.open'), icon: 'pencil', onSelect: () => setFixing(r) },
   ];
 
   return (
@@ -166,6 +164,8 @@ function RowsTable({
             rows={list.items}
             getRowKey={(r) => r.id}
             rowTone={(r) => (r.action === 'error' ? 'danger' : undefined)}
+            onRowClick={(r) => setFixing(r)}
+            rowActions={rowActions}
           />
           <Pagination
             className="mt-4"

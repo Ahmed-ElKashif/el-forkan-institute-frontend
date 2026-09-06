@@ -1,5 +1,6 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { useCallback, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { Icon } from '../core/Icon';
+import { ActionMenu, ContextMenu, type ActionItem } from '../core/Menu';
 import { cn } from '../cn';
 
 export type Density = 'comfortable' | 'compact';
@@ -28,6 +29,9 @@ export interface DataTableProps<T> extends Omit<HTMLAttributes<HTMLDivElement>, 
    *  land on an interactive cell — a link, button, or the status dropdown — are
    *  left to that control, so an inline edit never doubles as navigation. */
   onRowClick?: (row: T) => void;
+  /** Per-row actions. Rendered as a trailing 3-dots menu, and — for the same
+   *  row — opened on right-click as a context menu. Return [] to show none. */
+  rowActions?: (row: T) => ActionItem[];
   empty?: ReactNode;
 }
 
@@ -56,8 +60,9 @@ const ALIGN = {
 /* The header row is always sticky; `sticky` on a column pins it too. That
    pairing is what makes the attendance grid usable on a phone.
 
-   Nothing here holds state or listens for pointer events — the grid renders
-   hundreds of cells, so hover and selection are CSS, never React re-renders. */
+   Hover and selection are CSS, never React re-renders — the grid renders
+   hundreds of cells. The one piece of state is the right-click context menu,
+   which only changes on a right-click, not on hover. */
 export function DataTable<T>({
   columns,
   rows,
@@ -65,12 +70,16 @@ export function DataTable<T>({
   getRowKey,
   rowTone,
   onRowClick,
+  rowActions,
   empty,
   className,
   ...rest
 }: DataTableProps<T>) {
   const compact = density === 'compact';
   const cellPad = compact ? 'px-2' : 'px-3';
+  const [menu, setMenu] = useState<{ x: number; y: number; items: ActionItem[] } | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const columnCount = columns.length + (rowActions ? 1 : 0);
 
   return (
     <div
@@ -102,18 +111,31 @@ export function DataTable<T>({
                 {c.header}
               </th>
             ))}
+            {rowActions ? (
+              <th
+                scope="col"
+                aria-label="إجراءات"
+                style={{ width: 48 }}
+                className={cn(
+                  'sticky top-0 z-2 border-b border-default bg-canvas',
+                  compact ? 'h-8' : 'h-10',
+                  cellPad,
+                )}
+              />
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="p-8 text-center text-ink-500">
+              <td colSpan={columnCount} className="p-8 text-center text-ink-500">
                 {empty ?? 'لا توجد بيانات'}
               </td>
             </tr>
           ) : (
             rows.map((row, i) => {
               const tone = rowTone?.(row);
+              const actions = rowActions?.(row) ?? [];
               return (
                 <tr
                   key={getRowKey ? getRowKey(row, i) : i}
@@ -121,6 +143,14 @@ export function DataTable<T>({
                     onRowClick
                       ? (e) => {
                           if (!hitInteractive(e.target)) onRowClick(row);
+                        }
+                      : undefined
+                  }
+                  onContextMenu={
+                    actions.length > 0
+                      ? (e) => {
+                          e.preventDefault();
+                          setMenu({ x: e.clientX, y: e.clientY, items: actions });
                         }
                       : undefined
                   }
@@ -153,12 +183,24 @@ export function DataTable<T>({
                       {c.render ? c.render(row, i) : (row as Record<string, ReactNode>)[c.key]}
                     </td>
                   ))}
+                  {rowActions ? (
+                    <td
+                      className={cn(
+                        'border-b border-subtle text-end',
+                        compact ? 'h-8' : 'h-12',
+                        cellPad,
+                      )}
+                    >
+                      <ActionMenu items={actions} />
+                    </td>
+                  ) : null}
                 </tr>
               );
             })
           )}
         </tbody>
       </table>
+      {menu ? <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={closeMenu} /> : null}
     </div>
   );
 }

@@ -70,7 +70,8 @@ describe('CertificatesPage', () => {
     await userEvent.click(screen.getByRole('tab', { name: /الشهادات الصادرة/ }));
     await screen.findByText('محمود إبراهيم');
 
-    await userEvent.click(screen.getByRole('button', { name: 'إبطال' })); // row action
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' })); // row 3-dots menu
+    await userEvent.click(screen.getByRole('menuitem', { name: 'إبطال' }));
     // Confirm is disabled until a reason of at least three characters is typed.
     expect((lastButton('إبطال') as HTMLButtonElement).disabled).toBe(true);
     await userEvent.type(screen.getByRole('textbox'), 'خطأ في بيانات الطالب');
@@ -89,7 +90,8 @@ describe('CertificatesPage', () => {
     await userEvent.click(screen.getByRole('tab', { name: /الشهادات الصادرة/ }));
     await screen.findByText('محمود إبراهيم');
 
-    await userEvent.click(screen.getByRole('button', { name: 'طباعة' }));
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' })); // row 3-dots menu
+    await userEvent.click(screen.getByRole('menuitem', { name: 'طباعة' }));
 
     await waitFor(() => expect(http.countOf('POST /certificates/c1/reprint')).toBe(1));
   });

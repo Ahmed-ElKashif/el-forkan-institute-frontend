@@ -4,8 +4,8 @@ import { useParams } from 'react-router-dom';
 import {
   Badge,
   EmptyState,
-  IconButton,
   Toast,
+  type ActionItem,
   type BadgeProps,
   type Column,
 } from '../../ds';
@@ -54,14 +54,10 @@ export function SessionsPage() {
         <Badge tone={STATUS_TONE[s.status] ?? 'neutral'}>{t(`sessions.status.${s.status}`)}</Badge>
       ),
     },
-    {
-      key: 'edit',
-      header: '',
-      align: 'end',
-      render: (s) => (
-        <IconButton icon="pencil" label={t('sessions.edit')} size="sm" onClick={() => setEditing(s)} />
-      ),
-    },
+  ];
+
+  const rowActions = (s: Session): ActionItem[] => [
+    { key: 'edit', label: t('sessions.edit'), icon: 'pencil', onSelect: () => setEditing(s) },
   ];
 
   return (
@@ -81,6 +77,8 @@ export function SessionsPage() {
         errorTitle={t('sessions.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(s) => setEditing(s)}
+        rowActions={rowActions}
         empty={
           <EmptyState
             icon="calendar-days"

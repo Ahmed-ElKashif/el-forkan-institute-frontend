@@ -6,10 +6,10 @@ import {
   Button,
   ConfirmDialog,
   DataTable,
-  IconButton,
   Tabs,
   Toast,
   formatNumber,
+  type ActionItem,
   type BadgeProps,
   type Column,
   type TabItem,
@@ -141,7 +141,6 @@ function TemplatesTab({ onToast }: { onToast: (toast: ToastState) => void }) {
     { key: 'channel', header: t('whatsapp.templates.channel'), render: (tmpl) => <span className="ef-num">{tmpl.channel}</span> },
     { key: 'language', header: t('whatsapp.templates.language'), render: (tmpl) => <span className="ef-num">{tmpl.language}</span> },
     { key: 'status', header: t('whatsapp.templates.statusColumn'), render: (tmpl) => <Badge tone={tmpl.isActive ? 'success' : 'neutral'}>{t(tmpl.isActive ? 'whatsapp.templates.active' : 'whatsapp.templates.inactive')}</Badge> },
-    { key: 'edit', header: '', align: 'end', render: (tmpl) => <IconButton icon="pencil" label={t('whatsapp.edit')} size="sm" onClick={() => setEditing(tmpl)} /> },
   ];
 
   if (query.isLoading && !query.data) return <ListSkeleton />;
@@ -149,7 +148,13 @@ function TemplatesTab({ onToast }: { onToast: (toast: ToastState) => void }) {
 
   return (
     <>
-      <DataTable columns={columns} rows={query.data} getRowKey={(tmpl) => tmpl.id} />
+      <DataTable
+        columns={columns}
+        rows={query.data}
+        getRowKey={(tmpl) => tmpl.id}
+        onRowClick={(tmpl) => setEditing(tmpl)}
+        rowActions={(tmpl): ActionItem[] => [{ key: 'edit', label: t('whatsapp.edit'), icon: 'pencil', onSelect: () => setEditing(tmpl) }]}
+      />
       {editing ? (
         <TemplateDialog template={editing} onClose={() => setEditing(null)} onSaved={(message) => { setEditing(null); onToast({ tone: 'success', message }); }} />
       ) : null}

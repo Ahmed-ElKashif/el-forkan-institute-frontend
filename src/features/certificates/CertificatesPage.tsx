@@ -8,10 +8,10 @@ import {
   ConfirmDialog,
   DataTable,
   EmptyState,
-  IconButton,
   Skeleton,
   Tabs,
   Toast,
+  type ActionItem,
   type Column,
   type TabItem,
 } from '../../ds';
@@ -206,19 +206,15 @@ function IssuedTab({
           <Badge tone="success">{t('certificates.status.valid')}</Badge>
         ),
     },
-    {
-      key: 'actions',
-      header: '',
-      align: 'end',
-      render: (r) =>
-        r.revokedAt ? null : (
-          <div className="flex justify-end gap-1">
-            <IconButton icon="printer" label={t('certificates.print')} size="sm" onClick={() => printCertificate(r)} />
-            <IconButton icon="trash" label={t('certificates.revoke')} size="sm" onClick={() => setRevoking(r)} />
-          </div>
-        ),
-    },
   ];
+
+  const rowActions = (r: Certificate): ActionItem[] =>
+    r.revokedAt
+      ? []
+      : [
+          { key: 'print', label: t('certificates.print'), icon: 'printer', onSelect: () => printCertificate(r) },
+          { key: 'revoke', label: t('certificates.revoke'), icon: 'trash', tone: 'danger', onSelect: () => setRevoking(r) },
+        ];
 
   return (
     <>
@@ -228,6 +224,7 @@ function IssuedTab({
         isError={isError}
         columns={columns}
         getRowKey={(r) => r.id}
+        rowActions={rowActions}
         emptyIcon="award"
         emptyTitle={t('certificates.emptyIssued.title')}
         emptyDescription={t('certificates.emptyIssued.description')}
@@ -260,6 +257,7 @@ interface ListBodyProps<T> {
   isError: boolean;
   columns: Column<T>[];
   getRowKey: (row: T) => string;
+  rowActions?: (row: T) => ActionItem[];
   emptyIcon: 'award' | 'graduation-cap';
   emptyTitle: string;
   emptyDescription: string;
@@ -271,6 +269,7 @@ function ListBody<T>({
   isError,
   columns,
   getRowKey,
+  rowActions,
   emptyIcon,
   emptyTitle,
   emptyDescription,
@@ -280,7 +279,7 @@ function ListBody<T>({
   if (isError && !rows) return <Alert tone="danger" title={t('certificates.error')} />;
   if (!rows) return null;
   if (rows.length === 0) return <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription} />;
-  return <DataTable columns={columns} rows={rows} getRowKey={getRowKey} />;
+  return <DataTable columns={columns} rows={rows} getRowKey={getRowKey} rowActions={rowActions} />;
 }
 
 function TableSkeleton() {

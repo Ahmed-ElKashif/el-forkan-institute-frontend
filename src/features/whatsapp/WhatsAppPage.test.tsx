@@ -37,7 +37,8 @@ describe('WhatsAppPage', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'القوالب' }));
     await screen.findByText('friday_schedule');
 
-    await userEvent.click(screen.getByRole('button', { name: 'تعديل' }));
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'تعديل' }));
     const bodyField = screen.getByRole('textbox', { name: 'نص الرسالة' });
     await userEvent.clear(bodyField);
     await userEvent.type(bodyField, 'رسالة محدثة');

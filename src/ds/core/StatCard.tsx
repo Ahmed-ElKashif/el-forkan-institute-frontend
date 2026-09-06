@@ -15,9 +15,16 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   icon?: IconName;
   trend?: ReactNode;
   trendTone?: keyof typeof TREND_TONE;
+  /** Makes the tile a control — cursor, hover lift, focus ring, and keyboard
+   *  (Enter/Space) — for a drill-down or a filter toggle. Static tiles stay
+   *  flat, so the hover cue only appears where a click actually does something. */
+  interactive?: boolean;
+  /** Selected state for an interactive tile used as a filter (aria-pressed). */
+  active?: boolean;
 }
 
-/** Dashboard summary tile. The value renders in tabular Latin digits. */
+/** Dashboard summary tile. The value renders in tabular Latin digits. Optionally
+ *  a control (see `interactive`) — a clickable stat that drills in or filters. */
 export function StatCard({
   label,
   value,
@@ -25,14 +32,31 @@ export function StatCard({
   icon,
   trend,
   trendTone = 'neutral',
+  interactive = false,
+  active = false,
   className,
+  onKeyDown,
   ...rest
 }: StatCardProps) {
   return (
     <div
+      {...(interactive ? { role: 'button', tabIndex: 0, 'aria-pressed': active } : {})}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.currentTarget.click();
+              }
+              onKeyDown?.(e);
+            }
+          : onKeyDown
+      }
       className={cn(
-        'rounded-xl border border-default bg-surface p-5 shadow-card',
-        'transition-shadow duration-[var(--dur-base)] hover:shadow-raised',
+        'rounded-xl border bg-surface p-5 shadow-card',
+        active ? 'border-brand bg-tint' : 'border-default',
+        interactive &&
+          'cursor-pointer transition-[box-shadow,border-color] duration-[var(--dur-base)] hover:shadow-raised hover:border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         className,
       )}
       {...rest}

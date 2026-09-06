@@ -4,6 +4,7 @@ import {
   DataTable,
   Pagination,
   Skeleton,
+  type ActionItem,
   type Column,
   type Density,
 } from '../../ds';
@@ -26,6 +27,8 @@ export interface PagedListProps<T> {
   density?: Density;
   /** Opens a row's detail; forwarded to the table (interactive cells excepted). */
   onRowClick?: (row: T) => void;
+  /** Per-row actions — a trailing 3-dots menu, also opened on row right-click. */
+  rowActions?: (row: T) => ActionItem[];
 }
 
 /** The loading → error → empty → table+pagination shell every list screen
@@ -47,6 +50,7 @@ export function PagedList<T>({
   onPage,
   density,
   onRowClick,
+  rowActions,
 }: PagedListProps<T>) {
   if (isLoading && !data) return <ListSkeleton />;
   if (isError && !data) return <Alert tone="danger" title={errorTitle} />;
@@ -61,6 +65,7 @@ export function PagedList<T>({
         rows={data.items}
         getRowKey={getRowKey}
         onRowClick={onRowClick}
+        rowActions={rowActions}
       />
       <Pagination
         className="mt-4"

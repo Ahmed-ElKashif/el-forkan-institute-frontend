@@ -51,7 +51,8 @@ describe('AuditPage', () => {
     expect(await screen.findByText('محمود عبد الله')).toBeDefined();
     expect(screen.getByText('student.create')).toBeDefined();
 
-    await userEvent.click(screen.getByRole('button', { name: 'التفاصيل' }));
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'التفاصيل' }));
 
     // The dialog shows the "after" snapshot with the changed field.
     expect(screen.getByText('بعد')).toBeDefined();

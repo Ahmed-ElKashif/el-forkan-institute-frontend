@@ -73,7 +73,8 @@ describe('CurriculumPage', () => {
     const http = renderCurriculum({ [treeKey]: [ROW], 'POST /curriculum/10/units': { id: 5, bookId: null, bookTitleAr: null, unitLabel: null, syllabusScopeAr: 'باب', alternativeGroup: null, sortOrder: 1 } });
     await screen.findByText('اللغة العربية');
 
-    await userEvent.click(screen.getByRole('button', { name: 'إضافة وحدة' }));
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'إضافة وحدة' }));
     await userEvent.type(screen.getByRole('textbox', { name: 'نطاق الدراسة' }), 'من أول الكتاب إلى باب الفاعل');
     await userEvent.click(screen.getByRole('button', { name: 'حفظ' }));
 

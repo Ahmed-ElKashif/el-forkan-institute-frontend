@@ -99,8 +99,9 @@ describe('ImportPreview', () => {
     });
     await screen.findByText('أحمد سالم');
 
-    // The error row is the second; open its fix dialog.
-    await userEvent.click(screen.getAllByRole('button', { name: 'تصحيح' })[1]);
+    // The error row is the second; open its 3-dots menu, then the fix dialog.
+    await userEvent.click(screen.getAllByRole('button', { name: 'إجراءات' })[1]);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'تصحيح' }));
     await userEvent.type(screen.getByRole('textbox', { name: 'الاسم' }), 'أحمد المصحّح');
     await userEvent.click(screen.getByRole('button', { name: 'حفظ التصحيح' }));
 

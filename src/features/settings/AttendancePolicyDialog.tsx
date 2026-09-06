@@ -98,7 +98,7 @@ export function AttendancePolicyDialog({
           <Button variant="primary" icon="circle-check" onClick={submit} disabled={!canSubmit} loading={upsertState.isLoading}>
             {t('settings.attendance.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('settings.attendance.cancel')}
           </Button>
         </>

@@ -40,7 +40,7 @@ export function LevelEditDialog({ level, onClose, onSaved }: { level: Level; onC
           <Button variant="primary" onClick={submit} loading={isLoading} disabled={isLoading}>
             {t('catalogue.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('catalogue.cancel')}
           </Button>
         </>

@@ -61,7 +61,7 @@ export function CorrectionDialog({
           <Button variant="primary" onClick={submit} disabled={!canSave} loading={isLoading}>
             {t('scores.correction.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('scores.correction.cancel')}
           </Button>
         </>

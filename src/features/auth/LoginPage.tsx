@@ -106,7 +106,7 @@ export function LoginPage() {
             <Button type="submit" size="lg" fullWidth icon="log-in" loading={submitting}>
               {submitting ? t('auth.login.verifying') : t('auth.login.verify')}
             </Button>
-            <Button type="button" variant="ghost" fullWidth onClick={backToCredentials} disabled={submitting}>
+            <Button type="button" variant="secondary" fullWidth onClick={backToCredentials} disabled={submitting}>
               {t('auth.login.back')}
             </Button>
           </form>
@@ -141,7 +141,7 @@ export function LoginPage() {
             <Button type="submit" size="lg" fullWidth icon="log-in" loading={submitting}>
               {submitting ? t('auth.login.submitting') : t('auth.login.submit')}
             </Button>
-            <Button type="button" variant="ghost" fullWidth onClick={() => navigate('/reset-password')} disabled={submitting}>
+            <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/reset-password')} disabled={submitting}>
               {t('auth.login.forgot')}
             </Button>
           </form>

@@ -66,7 +66,7 @@ export function UnitDialog({ curriculumId, unit, books, onClose, onSaved }: Prop
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={busy}>
             {t('curriculum.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>{t('curriculum.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('curriculum.cancel')}</Button>
         </>
       }
     >

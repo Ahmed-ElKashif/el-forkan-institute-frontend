@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Alert, Badge, EmptyState, Icon, formatNumber, type BadgeProps, type Column } from '../../ds';
 import { useCurrentAcademicYearQuery } from '../../shared/api/calendar';
@@ -27,6 +27,7 @@ export interface SectionsPageProps {
  *  and editing sections belong to the foundation screens (F6). */
 export function SectionsPage({ basePath, captionKey }: SectionsPageProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const year = useCurrentAcademicYearQuery();
 
@@ -116,6 +117,7 @@ export function SectionsPage({ basePath, captionKey }: SectionsPageProps) {
         errorTitle={t('sections.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(s) => navigate(`${basePath}/${s.id}`)}
         empty={
           <EmptyState
             icon="book-open"

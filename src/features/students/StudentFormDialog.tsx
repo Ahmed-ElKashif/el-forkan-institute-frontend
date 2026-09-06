@@ -108,7 +108,7 @@ export function StudentFormDialog({
           <Button variant="primary" icon="circle-check" onClick={submit} disabled={!canSubmit} loading={busy}>
             {t('students.form.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('students.form.cancel')}
           </Button>
         </>

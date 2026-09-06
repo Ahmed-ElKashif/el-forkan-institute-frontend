@@ -60,8 +60,9 @@ describe('SettingsPage — attendance policies', () => {
     const user = userEvent.setup();
     await screen.findByText('الافتراضي (كل المستويات)');
 
-    // The default policy is the first row, so its edit button is the first.
-    await user.click(screen.getAllByLabelText('تعديل')[0]);
+    // The default policy is the first row; open its 3-dots menu, then edit.
+    await user.click(screen.getAllByRole('button', { name: 'إجراءات' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'تعديل' }));
     const maxInput = await screen.findByLabelText('الحد الأقصى للغياب');
     await user.clear(maxInput);
     await user.type(maxInput, '8');

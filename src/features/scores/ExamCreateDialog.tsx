@@ -103,7 +103,7 @@ export function ExamCreateDialog({
           <Button variant="primary" icon="plus" onClick={submit} disabled={!canSubmit} loading={createState.isLoading}>
             {t('scores.create.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('scores.create.cancel')}
           </Button>
         </>

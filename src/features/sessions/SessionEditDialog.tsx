@@ -83,7 +83,7 @@ export function SessionEditDialog({
           <Button variant="primary" icon="circle-check" onClick={submit} disabled={!canSubmit} loading={updateState.isLoading}>
             {t('sessions.form.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t('sessions.form.cancel')}
           </Button>
         </>

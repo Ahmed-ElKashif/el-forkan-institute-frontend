@@ -93,8 +93,10 @@ describe('ScoreGridPage', () => {
     renderScores(HEAD, { 'GET /exams/exam1/scores': gridOf(true) });
     await screen.findByText('النحو');
 
-    // Correction is offered only after restore() resolves the head-teacher role.
-    expect(await screen.findByRole('button', { name: 'تصحيح' })).toBeDefined();
+    // Correction is offered only after restore() resolves the head-teacher role,
+    // now via the row's 3-dots menu.
+    await userEvent.click(await screen.findByRole('button', { name: 'إجراءات' }));
+    expect(screen.getByRole('menuitem', { name: 'تصحيح' })).toBeDefined();
     // Locked: there is no bulk save control at all.
     expect(screen.queryByRole('button', { name: 'حفظ الدرجات' })).toBeNull();
   });

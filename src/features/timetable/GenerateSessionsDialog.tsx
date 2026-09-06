@@ -49,7 +49,7 @@ export function GenerateSessionsDialog({ sectionId, academicYearId, onClose, onG
           <Button variant="primary" onClick={run} disabled={selectedTerm == null || generateState.isLoading} loading={generateState.isLoading}>
             {t('timetable.generate.confirm')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>{t('timetable.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('timetable.cancel')}</Button>
         </>
       }
     >

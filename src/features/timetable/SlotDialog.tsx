@@ -86,7 +86,7 @@ export function SlotDialog({ sectionId, target, subjects, teachers, onClose, onS
       footer={
         <>
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={busy}>{t('timetable.save')}</Button>
-          <Button variant="ghost" onClick={onClose}>{t('timetable.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('timetable.cancel')}</Button>
         </>
       }
     >

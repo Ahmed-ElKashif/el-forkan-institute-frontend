@@ -6,10 +6,10 @@ import {
   Button,
   Checkbox,
   DataTable,
-  IconButton,
   SearchInput,
   Tabs,
   Toast,
+  type ActionItem,
   type Column,
   type TabItem,
 } from '../../ds';
@@ -74,7 +74,6 @@ function LevelsTab({ onToast }: { onToast: (toast: ToastState) => void }) {
         </div>
       ),
     },
-    { key: 'edit', header: '', align: 'end', render: (l) => <IconButton icon="pencil" label={t('catalogue.edit')} size="sm" onClick={() => setEditing(l)} /> },
   ];
 
   if (query.isLoading && !query.data) return <ListSkeleton />;
@@ -82,7 +81,13 @@ function LevelsTab({ onToast }: { onToast: (toast: ToastState) => void }) {
 
   return (
     <>
-      <DataTable columns={columns} rows={query.data} getRowKey={(l) => l.id} />
+      <DataTable
+        columns={columns}
+        rows={query.data}
+        getRowKey={(l) => l.id}
+        onRowClick={(l) => setEditing(l)}
+        rowActions={(l) => [{ key: 'edit', label: t('catalogue.edit'), icon: 'pencil', onSelect: () => setEditing(l) }]}
+      />
       {editing ? (
         <LevelEditDialog level={editing} onClose={() => setEditing(null)} onSaved={(message) => { setEditing(null); onToast({ tone: 'success', message }); }} />
       ) : null}
@@ -104,7 +109,10 @@ function SubjectsTab({ onToast }: { onToast: (toast: ToastState) => void }) {
     { key: 'name', header: t('catalogue.subjects.nameColumn'), render: (s) => s.nameAr },
     { key: 'aliases', header: t('catalogue.subjects.aliasesColumn'), numeric: true, render: (s) => <span className="ef-num">{s.aliases.length}</span> },
     { key: 'status', header: t('catalogue.statusColumn'), render: (s) => <Badge tone={s.isActive ? 'success' : 'neutral'}>{t(s.isActive ? 'catalogue.status.active' : 'catalogue.status.inactive')}</Badge> },
-    { key: 'edit', header: '', align: 'end', render: (s) => <IconButton icon="pencil" label={t('catalogue.edit')} size="sm" onClick={() => setForm(s)} /> },
+  ];
+
+  const rowActions = (s: Subject): ActionItem[] => [
+    { key: 'edit', label: t('catalogue.edit'), icon: 'pencil', onSelect: () => setForm(s) },
   ];
 
   return (
@@ -124,6 +132,8 @@ function SubjectsTab({ onToast }: { onToast: (toast: ToastState) => void }) {
         errorTitle={t('catalogue.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(s) => setForm(s)}
+        rowActions={rowActions}
         empty={<EmptyHint text={t('catalogue.subjects.empty')} />}
       />
       {form !== undefined ? (
@@ -143,7 +153,10 @@ function BooksTab({ onToast }: { onToast: (toast: ToastState) => void }) {
     { key: 'title', header: t('catalogue.books.titleColumn'), render: (b) => b.titleAr },
     { key: 'author', header: t('catalogue.books.authorColumn'), render: (b) => b.authorAr ?? <span className="text-ink-400">—</span> },
     { key: 'status', header: t('catalogue.statusColumn'), render: (b) => <Badge tone={b.isActive ? 'success' : 'neutral'}>{t(b.isActive ? 'catalogue.status.active' : 'catalogue.status.inactive')}</Badge> },
-    { key: 'edit', header: '', align: 'end', render: (b) => <IconButton icon="pencil" label={t('catalogue.edit')} size="sm" onClick={() => setForm(b)} /> },
+  ];
+
+  const rowActions = (b: Book): ActionItem[] => [
+    { key: 'edit', label: t('catalogue.edit'), icon: 'pencil', onSelect: () => setForm(b) },
   ];
 
   return (
@@ -161,6 +174,8 @@ function BooksTab({ onToast }: { onToast: (toast: ToastState) => void }) {
         errorTitle={t('catalogue.error')}
         page={page}
         onPage={setPage}
+        onRowClick={(b) => setForm(b)}
+        rowActions={rowActions}
         empty={<EmptyHint text={t('catalogue.books.empty')} />}
       />
       {form !== undefined ? (

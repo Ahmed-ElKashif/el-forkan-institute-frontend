@@ -38,7 +38,7 @@ export function EligibilityPrintPage() {
   return (
     <div className="min-h-screen bg-canvas p-6">
       <div className="ef-no-print mx-auto mb-4 flex max-w-[210mm] items-center justify-between gap-3">
-        <Button variant="ghost" onClick={() => navigate(-1)}>
+        <Button variant="secondary" onClick={() => navigate(-1)}>
           {t('eligibility.print.back')}
         </Button>
         <Button icon="printer" onClick={() => window.print()}>

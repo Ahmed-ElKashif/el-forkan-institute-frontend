@@ -141,7 +141,7 @@ function ProfileHeader({ student }: { student: StudentDetail }) {
               icon="pencil"
               label={t('students.profile.assignYear.editButton')}
               size="sm"
-              variant="ghost"
+              variant="outline"
               onClick={() => setAssigning(true)}
             />
           </span>

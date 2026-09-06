@@ -46,7 +46,7 @@ export function ReminderDialog({ onClose, onQueued }: { onClose: () => void; onQ
       footer={
         <>
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={queueState.isLoading}>{t('whatsapp.reminder.queue')}</Button>
-          <Button variant="ghost" onClick={onClose}>{t('whatsapp.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('whatsapp.cancel')}</Button>
         </>
       }
     >

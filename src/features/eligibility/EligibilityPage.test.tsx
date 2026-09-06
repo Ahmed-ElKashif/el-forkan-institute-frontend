@@ -105,7 +105,9 @@ describe('EligibilityPage', () => {
     renderEligibility();
     await screen.findByText('محمود علي');
 
-    await userEvent.selectOptions(screen.getByLabelText('التصفية'), 'eligible');
+    // The stat tiles are the filter now; click the "eligible" tile (its name
+    // starts with مستحق, distinct from the غير مستحق tile).
+    await userEvent.click(screen.getByRole('button', { name: (name) => name.startsWith('مستحق') }));
 
     await waitFor(() => expect(screen.queryByText('محمود علي')).toBeNull());
     expect(screen.getByText('أحمد سالم')).toBeDefined();
@@ -116,9 +118,10 @@ describe('EligibilityPage', () => {
     const user = userEvent.setup();
     await screen.findByText('محمود علي');
 
-    // Override buttons show for the head teacher, one per row; the held-out
-    // student is the second row.
-    await user.click(screen.getAllByLabelText('تعديل القرار')[1]);
+    // The head teacher gets a 3-dots menu per row; the held-out student is the
+    // second row. Open its menu, then the override item.
+    await user.click(screen.getAllByRole('button', { name: 'إجراءات' })[1]);
+    await user.click(screen.getByRole('menuitem', { name: 'تعديل القرار' }));
     await user.type(await screen.findByLabelText('سبب التعديل'), 'حالة خاصة موثّقة');
     await user.click(screen.getByRole('button', { name: 'حفظ' }));
 

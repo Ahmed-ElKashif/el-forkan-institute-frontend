@@ -104,7 +104,7 @@ export function CurriculumRowDialog({ target, yearId, levelId, termNumber, subje
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={busy}>
             {t('curriculum.save')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>{t('curriculum.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('curriculum.cancel')}</Button>
         </>
       }
     >

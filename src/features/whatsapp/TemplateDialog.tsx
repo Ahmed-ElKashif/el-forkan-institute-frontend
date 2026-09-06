@@ -46,7 +46,7 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Messa
       footer={
         <>
           <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={updateState.isLoading}>{t('whatsapp.save')}</Button>
-          <Button variant="ghost" onClick={onClose}>{t('whatsapp.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('whatsapp.cancel')}</Button>
         </>
       }
     >
