@@ -14,6 +14,13 @@ export interface FailedSubject {
   isMandatory: boolean;
 }
 
+export interface PromotionOverride {
+  decision: PromotionDecision;
+  reason: string;
+  overriddenBy: string;
+  overriddenAt: string;
+}
+
 export interface PromotionRow {
   enrollmentId: string;
   studentId: string;
@@ -21,7 +28,13 @@ export interface PromotionRow {
   levelId: number;
   levelCode: string;
   failedSubjects: FailedSubject[];
+  /** What will be written: the override if there is one, else `computedDecision`. */
   decision: PromotionDecision;
+  /** What the engine worked out — shown beside an override so the head teacher
+   *  can see what they are disagreeing with. */
+  computedDecision: PromotionDecision;
+  /** A recorded disagreement with the engine, or null when its verdict stands. */
+  override: PromotionOverride | null;
   /** Set when the row cannot be decided (missing rule, historical enrolment).
    *  A blocked row is never written, so it is excluded from the confirm. */
   blocker: string | null;
@@ -46,4 +59,13 @@ export interface ConfirmResult {
   enrollmentsCreated: number;
   carriesWritten: number;
   notMovedForward: number;
+}
+
+/** `PUT /promotion/overrides/:enrollmentId`. The reason is mandatory — it is
+ *  what the audit log records. */
+export interface OverrideParams {
+  enrollmentId: string;
+  decision: PromotionDecision;
+  afterMakeup: boolean;
+  reason: string;
 }

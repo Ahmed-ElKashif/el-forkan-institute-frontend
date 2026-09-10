@@ -35,11 +35,17 @@ export const DESTINATIONS: NavDestination[] = [
   { key: 'sections', path: '/sections', labelKey: 'nav.sections', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
   { key: 'users', path: '/users', labelKey: 'nav.users', groupKey: 'nav.groups.administration', icon: 'user', headTeacherOnly: true, phase: 'F6' },
   { key: 'catalogue', path: '/catalogue', labelKey: 'nav.catalogue', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
-  { key: 'curriculum', path: '/curriculum', labelKey: 'nav.curriculum', groupKey: 'nav.groups.administration', icon: 'scroll-text', headTeacherOnly: true, phase: 'F6' },
-  { key: 'timetable', path: '/timetable', labelKey: 'nav.timetable', groupKey: 'nav.groups.administration', icon: 'rows-4', headTeacherOnly: true, phase: 'F6' },
+  // No `curriculum` destination: the curriculum is assembled out of the levels,
+  // subjects and books on the catalogue screen, so it is a tab there
+  // (`/catalogue?tab=curriculum`). `/curriculum` redirects into that tab.
+  // No `timetable` destination: a class's weekly grid is a tab on that class
+  // (`/sections/:id?tab=timetable`), so a separate entry would have asked the
+  // head teacher to pick the same class twice. `/timetable/:id` still resolves —
+  // App.tsx redirects it into the tab.
   { key: 'whatsapp', path: '/whatsapp', labelKey: 'nav.whatsapp', groupKey: 'nav.groups.administration', icon: 'message-circle', headTeacherOnly: true, phase: 'F6' },
+  // One entry for both directions of the same workbook; `/exports` redirects
+  // into this screen's export tab.
   { key: 'imports', path: '/imports', labelKey: 'nav.imports', groupKey: 'nav.groups.administration', icon: 'file-spreadsheet', headTeacherOnly: true, phase: 'F4' },
-  { key: 'exports', path: '/exports', labelKey: 'nav.exports', groupKey: 'nav.groups.administration', icon: 'download', headTeacherOnly: true, phase: 'F4' },
   { key: 'certificates', path: '/certificates', labelKey: 'nav.certificates', groupKey: 'nav.groups.administration', icon: 'award', headTeacherOnly: true, phase: 'F5' },
   { key: 'promotion', path: '/promotion', labelKey: 'nav.promotion', groupKey: 'nav.groups.administration', icon: 'rotate-ccw', headTeacherOnly: true, phase: 'F6' },
   { key: 'audit', path: '/audit', labelKey: 'nav.audit', groupKey: 'nav.groups.administration', icon: 'history', headTeacherOnly: true, phase: 'F6' },

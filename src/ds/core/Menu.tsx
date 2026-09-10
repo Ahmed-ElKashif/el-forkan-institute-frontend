@@ -19,7 +19,7 @@ function MenuList({ items, onClose }: { items: ActionItem[]; onClose: () => void
   return (
     <ul
       role="menu"
-      className="ef-menu m-0 min-w-44 list-none rounded-lg border border-default bg-surface p-1 shadow-modal motion-safe:animate-[ef-dialog-in_var(--dur-fast)_var(--ease-standard)]"
+      className="ef-menu m-0 min-w-44 list-none rounded-lg border border-default bg-surface p-1 shadow-modal origin-top motion-safe:animate-[ef-dialog-in_var(--dur-fast)_var(--ease-standard)]"
     >
       {items.map((item) => (
         <li key={item.key} role="none">

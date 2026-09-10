@@ -134,6 +134,109 @@
   }
 }
 
+/* Exits — the reverse of the entrances above. An element that animates in but
+   pops out feels broken, so the scrim, modal and toast each leave the way they
+   arrived. Held mounted for one --dur-base by useExitTransition. */
+@keyframes ef-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ef-dialog-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+}
+
+@keyframes ef-toast-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   First-login welcome. A once-per-device ceremony, so it earns a longer, more
+   generous beat than anything in the daily UI. Every keyframe's `from` is the
+   hidden state and its `to` is the resting state, applied with fill `both` — so
+   under `prefers-reduced-motion` (no animation) each element simply renders in
+   its final, visible state. Only transform/opacity/clip-path animate.
+--------------------------------------------------------------------------- */
+
+/* The real logo mark inscribes itself from the base up — the open book first,
+   then the dome, then the finial — via a clip that retreats from the top. */
+@keyframes ef-logo-reveal {
+  from {
+    opacity: 0;
+    clip-path: inset(100% 0 0 0);
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: scale(1);
+  }
+}
+
+/* A gold rule that grows outward from the centre — the open book's line. */
+@keyframes ef-rule-grow {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* Text and caption settle upward into place. */
+@keyframes ef-welcome-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Indeterminate gold sweep along the loading track. */
+@keyframes ef-loader-sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+/* The whole overlay dissolves, drifting a hair back, to reveal the app. */
+@keyframes ef-welcome-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
 /* ---------------------------------------------------------------------------
    A4 portrait RTL. Roster sheets, result sheets and certificates are real
    deliverables, so every state fill becomes an outlined black glyph — nothing

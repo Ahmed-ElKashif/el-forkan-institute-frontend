@@ -27,6 +27,7 @@ import {
   useGetStudentQuery,
   useLazyRevealNationalIdQuery,
   useStudentAttendanceQuery,
+  useStudentCarriedSubjectsQuery,
   useStudentEnrollmentsQuery,
   useStudentExamResultsQuery,
   useStudentPlacementsQuery,
@@ -35,6 +36,7 @@ import {
 import type {
   AbsencePosition,
   AttendanceRecord,
+  CarriedSubject,
   EnrollmentHistoryItem,
   ExamResult,
   Placement,
@@ -92,6 +94,7 @@ export function StudentProfilePage() {
         <div className="space-y-6 lg:col-span-2">
           <AttendancePanel id={id} />
           <ScoresPanel id={id} />
+          <CarriedSubjectsPanel id={id} />
           <EnrollmentPanel id={id} />
           <PlacementsPanel id={id} />
         </div>
@@ -401,6 +404,61 @@ function ScoresPanel({ id }: { id: string }) {
       ) : (
         <EmptyState icon="file-text" title={t('students.profile.scores.empty')} />
       )}
+    </Card>
+  );
+}
+
+/**
+ * Subjects still owed from earlier levels (R13/R14), grouped by the level that
+ * produced them — "one from المستوى الأول, two from المستوى الثاني", the way the
+ * head teacher reads it off the paper roster.
+ *
+ * The panel disappears when there is nothing to carry. Most students owe
+ * nothing, and an empty card headed "المواد المحمولة" would read as a warning
+ * where there is none.
+ */
+function CarriedSubjectsPanel({ id }: { id: string }) {
+  const { t } = useTranslation();
+  const query = useStudentCarriedSubjectsQuery(id);
+
+  const columns: Column<CarriedSubject>[] = [
+    { key: 'subject', header: t('students.profile.carries.subject'), render: (r) => r.subjectName },
+    {
+      key: 'status',
+      header: t('students.profile.carries.status'),
+      render: (r) => (
+        <Badge tone={r.status === 'cleared' ? 'success' : 'warning'}>
+          {t(`students.profile.carries.${r.status}`)}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (query.isError || !query.data || query.data.length === 0) return null;
+
+  return (
+    <Card title={t('students.profile.carries.title')}>
+      <div className="space-y-4">
+        {query.data.map((group) => (
+          <div key={group.originLevelId} className="space-y-2">
+            <div className="flex items-baseline gap-2 text-sm font-semibold text-ink-700">
+              <span>
+                {t('students.profile.carries.fromLevel', { level: group.originLevelName })}
+              </span>
+              {group.originHijriYear != null ? (
+                <span className="ef-num text-xs font-normal text-ink-500">
+                  {formatNumber(group.originHijriYear)}
+                </span>
+              ) : null}
+            </div>
+            <DataTable
+              columns={columns}
+              rows={group.subjects}
+              getRowKey={(r) => String(r.subjectId)}
+            />
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }

@@ -1,27 +1,24 @@
 import { useMemo, type ReactNode } from 'react';
 import { Provider as StoreProvider } from 'react-redux';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import type { AppContainer } from '../shared/di/container';
 import { DiProvider } from '../shared/di/DiProvider';
 import { makeStore } from '../shared/api/store';
-import { AuthProvider, LoginPage, ResetPasswordPage, ProtectedRoute, RequireRole } from '../features/auth';
+import { AuthProvider, LoginPage, ResetPasswordPage, ProtectedRoute, RequireRole, FirstLoginWelcome } from '../features/auth';
 import { DashboardPage } from '../features/dashboard';
 import { StudentsPage, StudentProfilePage } from '../features/students';
-import { SectionsPage, SectionsAdminPage } from '../features/sections';
+import { SectionsPage, SectionsAdminPage, SectionDetailPage } from '../features/sections';
 import { AttendanceGridPage } from '../features/attendance';
 import { ExamPickerPage, ScoreGridPage } from '../features/scores';
 import { EligibilityPage, EligibilityPrintPage } from '../features/eligibility';
 import { TermResultsPage } from '../features/termresults';
 import { SessionsPage } from '../features/sessions';
-import { ImportPage } from '../features/import';
-import { ExportsPage } from '../features/exports';
+import { ImportExportPage } from '../features/import';
 import { CertificatesPage, CertificatePrintPage } from '../features/certificates';
 import { PromotionPage } from '../features/promotion';
 import { AuditPage } from '../features/audit';
 import { UsersPage } from '../features/users';
 import { CataloguePage } from '../features/catalogue';
-import { CurriculumPage } from '../features/curriculum';
-import { TimetableEditorPage } from '../features/timetable';
 import { WhatsAppPage } from '../features/whatsapp';
 import { SettingsPage } from '../features/settings';
 import { AppShell } from './shell/AppShell';
@@ -43,24 +40,26 @@ const BUILT_SCREENS: Record<string, ReactNode> = {
      picker only differs by where its rows point and its caption. */
   attendance: <SectionsPage basePath="/attendance" captionKey="sections.pickForAttendance" />,
   scores: <SectionsPage basePath="/scores" captionKey="sections.pickForScores" />,
-  /* Timetable-setting is head-teacher only; the picker route is gated by the
-     registry flag, and the per-section editor is gated below. */
-  timetable: <SectionsPage basePath="/timetable" captionKey="sections.pickForTimetable" />,
   /* Head-teacher-only; gated in the route table via the registry's flag. */
-  imports: <ImportPage />,
-  exports: <ExportsPage />,
+  imports: <ImportExportPage />,
   certificates: <CertificatesPage />,
   promotion: <PromotionPage />,
   audit: <AuditPage />,
   users: <UsersPage />,
   catalogue: <CataloguePage />,
-  curriculum: <CurriculumPage />,
   whatsapp: <WhatsAppPage />,
   settings: <SettingsPage />,
 };
 
 function screenFor(destinationKey: string): ReactNode {
   return BUILT_SCREENS[destinationKey] ?? <SectionPlaceholder />;
+}
+
+/** `/timetable/:sectionId` → the class's timetable tab. Routing, not a feature,
+ *  so it lives here rather than inside `features/timetable`. */
+function TimetableRedirect() {
+  const { sectionId = '' } = useParams();
+  return <Navigate to={`/sections/${sectionId}?tab=timetable`} replace />;
 }
 
 /** Wires the container into React, then declares the route table.
@@ -132,15 +131,28 @@ export function App({ container }: { container: AppContainer }) {
                   {gatedDestinations.map((d) => (
                     <Route key={d.key} path={d.path} element={screenFor(d.key)} />
                   ))}
-                  {/* The per-section timetable editor, reached from the gated
-                      /timetable picker; head-teacher only, like its writes. */}
-                  <Route path="/timetable/:sectionId" element={<TimetableEditorPage />} />
+                  {/* One class, with its roster, timetable and teachers as tabs.
+                      Head-teacher only, like the class writes it hosts. */}
+                  <Route path="/sections/:id" element={<SectionDetailPage />} />
+                  {/* Retired routes. The timetable used to be a destination with
+                      its own picker; both now land on the class that owns the
+                      grid, so existing links and bookmarks still work. */}
+                  <Route path="/timetable" element={<Navigate to="/sections" replace />} />
+                  <Route path="/timetable/:sectionId" element={<TimetableRedirect />} />
+                  {/* The curriculum is built out of the catalogue's levels,
+                      subjects and books, and export is the import's other
+                      direction — both are tabs now, not destinations. */}
+                  <Route path="/curriculum" element={<Navigate to="/catalogue?tab=curriculum" replace />} />
+                  <Route path="/exports" element={<Navigate to="/imports?tab=export" replace />} />
                 </Route>
               </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          {/* Ceremonial once-per-device welcome for the admin, layered above the
+              routes so it covers the shell while the dashboard boots. */}
+          <FirstLoginWelcome />
         </BrowserRouter>
       </AuthProvider>
       </StoreProvider>

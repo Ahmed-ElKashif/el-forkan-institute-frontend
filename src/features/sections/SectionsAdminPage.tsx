@@ -15,7 +15,7 @@ import { useCurrentAcademicYearQuery } from '../../shared/api/calendar';
 import { useLevelsQuery } from '../catalogue';
 import { SectionFormDialog } from './SectionFormDialog';
 import { SectionTeachersDialog } from './SectionTeachersDialog';
-import { useListSectionsQuery } from './sections.api';
+import { useListSectionsQuery, useProvisionSectionsMutation } from './sections.api';
 import type { Section } from './section.model';
 
 const GENDER_TONE: Record<string, NonNullable<BadgeProps['tone']>> = {
@@ -23,9 +23,15 @@ const GENDER_TONE: Record<string, NonNullable<BadgeProps['tone']>> = {
   female: 'brand',
 };
 
-/** Section administration (head-teacher only): create sections, edit them, and
- *  manage which teachers each one holds. Distinct from the read-only pickers the
- *  attendance/score/timetable screens open. */
+type ToastState = { tone: 'success' | 'danger'; message: string };
+
+/** Class administration (head-teacher only): provision the year's classes, edit
+ *  them, and manage which teachers each one holds. Distinct from the read-only
+ *  pickers the attendance/score screens open.
+ *
+ *  There is no "add a class" action: a level has many subjects but a single
+ *  cohort (R1 × R3), so the list is derived from the levels the institute
+ *  teaches rather than typed in one at a time. */
 export function SectionsAdminPage() {
   const { t } = useTranslation();
   const year = useCurrentAcademicYearQuery();
@@ -33,10 +39,29 @@ export function SectionsAdminPage() {
   const [page, setPage] = useState(1);
   const list = useListSectionsQuery({ academicYearId: yearId, page }, { skip: year.data == null });
   const levels = useLevelsQuery();
+  const [provisionSections, provision] = useProvisionSectionsMutation();
 
-  const [form, setForm] = useState<Section | 'new' | null>(null);
+  const [form, setForm] = useState<Section | null>(null);
   const [teachersFor, setTeachersFor] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+
+  async function provisionYear() {
+    if (year.data == null) return;
+    try {
+      const { created, total } = await provisionSections({
+        academicYearId: year.data.id,
+      }).unwrap();
+      setToast({
+        tone: 'success',
+        message:
+          created === 0
+            ? t('sections.admin.provisionNone')
+            : t('sections.admin.provisioned', { created, total }),
+      });
+    } catch {
+      setToast({ tone: 'danger', message: t('sections.admin.provisionError') });
+    }
+  }
 
   if (year.data == null && !year.isLoading) {
     return (
@@ -101,8 +126,17 @@ export function SectionsAdminPage() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="m-0 text-sm text-ink-500">{t('sections.admin.caption')}</p>
-        <Button size="sm" icon="plus" onClick={() => setForm('new')} disabled={year.data == null}>
-          {t('sections.admin.create')}
+        {/* A level has many subjects but one class (R1 × R3), so the class list
+            is provisioned from the levels the institute teaches — never typed in
+            one at a time. Idempotent, so pressing it twice is harmless. */}
+        <Button
+          size="sm"
+          icon="plus"
+          onClick={provisionYear}
+          loading={provision.isLoading}
+          disabled={year.data == null}
+        >
+          {t('sections.admin.provision')}
         </Button>
       </div>
 
@@ -129,12 +163,11 @@ export function SectionsAdminPage() {
 
       {form !== null ? (
         <SectionFormDialog
-          section={form === 'new' ? null : form}
-          academicYearId={yearId}
+          section={form}
           onClose={() => setForm(null)}
           onSaved={(message) => {
             setForm(null);
-            setToast(message);
+            setToast({ tone: 'success', message });
           }}
         />
       ) : null}
@@ -143,7 +176,9 @@ export function SectionsAdminPage() {
         <SectionTeachersDialog section={managing} onClose={() => setTeachersFor(null)} />
       ) : null}
 
-      {toast ? <Toast tone="success" message={toast} onDismiss={() => setToast(null)} /> : null}
+      {toast ? (
+        <Toast tone={toast.tone} message={toast.message} onDismiss={() => setToast(null)} />
+      ) : null}
     </section>
   );
 }

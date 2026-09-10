@@ -1,5 +1,6 @@
 import { useEffect, useRef, type HTMLAttributes, type ReactNode } from 'react';
 import { IconButton } from '../core/IconButton';
+import { useExitTransition } from '../useExitTransition';
 import { cn } from '../cn';
 
 export interface DialogProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
@@ -30,15 +31,19 @@ export function Dialog({
   ...rest
 }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // The dialog owns Escape, scrim-click and the header ✕, so those dismissals
+  // animate out. Footer buttons are consumer-rendered and call the parent's
+  // close directly, unmounting without this exit.
+  const { closing, requestClose } = useExitTransition(onClose);
 
   useEffect(() => {
     if (!open || !onClose) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') requestClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, onClose, requestClose]);
 
   useEffect(() => {
     if (open) panelRef.current?.focus();
@@ -50,10 +55,12 @@ export function Dialog({
     <div
       className={cn(
         'fixed inset-0 z-50 grid place-items-center bg-scrim p-6',
-        'motion-safe:animate-[ef-fade-in_var(--dur-base)_var(--ease-out)]',
+        closing
+          ? 'motion-safe:animate-[ef-fade-out_var(--dur-base)_var(--ease-out)_forwards]'
+          : 'motion-safe:animate-[ef-fade-in_var(--dur-base)_var(--ease-out)]',
       )}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
+        if (e.target === e.currentTarget) requestClose();
       }}
     >
       <div
@@ -67,7 +74,9 @@ export function Dialog({
           // a short phone never clips its footer/submit. dvh tracks the mobile
           // browser chrome; 3rem = the overlay's p-6 top + bottom.
           'flex max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-lg bg-surface shadow-modal outline-none',
-          'motion-safe:animate-[ef-dialog-in_var(--dur-base)_var(--ease-standard)]',
+          closing
+            ? 'motion-safe:animate-[ef-dialog-out_var(--dur-base)_var(--ease-standard)_forwards]'
+            : 'motion-safe:animate-[ef-dialog-in_var(--dur-base)_var(--ease-standard)]',
           className,
         )}
         {...rest}
@@ -79,7 +88,7 @@ export function Dialog({
               <p className="mt-1.5 mb-0 text-sm leading-body text-ink-500">{description}</p>
             ) : null}
           </div>
-          {onClose ? <IconButton icon="x" label="إغلاق" size="sm" onClick={onClose} /> : null}
+          {onClose ? <IconButton icon="x" label="إغلاق" size="sm" onClick={requestClose} /> : null}
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">{children}</div>

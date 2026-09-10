@@ -48,9 +48,13 @@ export function Switch({
       >
         <span
           className={cn(
-            'absolute top-[3px] size-4 rounded-full bg-white shadow-card',
-            'transition-[inset-inline-start] duration-[var(--dur-base)] ease-standard',
-            checked ? 'start-[21px]' : 'start-[3px]',
+            // The knob rests at the inline-start edge and travels via transform,
+            // not `inset-inline-start` — transform runs on the GPU and stays
+            // interruptible, so a rapid toggle retargets instead of restarting.
+            // 18px = track 40 − knob 16 − 3px inset each side; mirrored in RTL.
+            'absolute top-[3px] start-[3px] size-4 rounded-full bg-white shadow-card',
+            'transition-transform duration-[var(--dur-base)] ease-standard',
+            checked ? 'translate-x-[18px] rtl:-translate-x-[18px]' : 'translate-x-0',
           )}
         />
       </span>

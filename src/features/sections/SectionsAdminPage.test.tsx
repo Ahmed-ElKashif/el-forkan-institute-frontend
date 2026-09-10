@@ -78,19 +78,37 @@ describe('SectionsAdminPage', () => {
     expect(screen.getByText('أستاذ أحمد')).toBeDefined();
   });
 
-  it('creates a section in the head teacher’s branch', async () => {
-    const http = renderAdmin({ 'POST /sections': { ...SECTION, id: 's2', name: 'فصل الفقه' } });
+  it('provisions the year’s classes from the levels the institute teaches', async () => {
+    // A level has many subjects but one class (R1 × R3), so the admin asks for
+    // the year's set rather than naming classes one at a time — there is no
+    // "add a class" action to click.
+    const http = renderAdmin({
+      'POST /sections/provision': { created: 12, total: 12 },
+    });
     const user = userEvent.setup();
     await screen.findByText('فصل النحو');
 
-    await user.click(screen.getByRole('button', { name: 'إضافة فصل' }));
-    await user.type(await screen.findByLabelText('اسم الفصل'), 'فصل الفقه');
-    // Create dialog selects, in order: level, gender, delivery mode.
-    await user.selectOptions(screen.getAllByRole('combobox')[0], '1');
-    await user.click(screen.getByRole('button', { name: 'حفظ' }));
+    expect(screen.queryByRole('button', { name: 'إضافة فصل' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'تجهيز فصول العام' }));
 
-    await waitFor(() => expect(http.countOf('POST /sections')).toBe(1));
-    const post = http.calls.find((c) => c.method === 'POST' && c.path === '/sections');
-    expect(post?.body).toMatchObject({ name: 'فصل الفقه', levelId: 1, gender: 'male', branchId: 1, academicYearId: 1 });
+    await waitFor(() => expect(http.countOf('POST /sections/provision')).toBe(1));
+    const post = http.calls.find(
+      (c) => c.method === 'POST' && c.path === '/sections/provision',
+    );
+    // The branch is the server's to decide for a branch-bound head teacher.
+    expect(post?.body).toEqual({ academicYearId: 1 });
+  });
+
+  it('reports a year whose classes are already provisioned', async () => {
+    const http = renderAdmin({
+      'POST /sections/provision': { created: 0, total: 12 },
+    });
+    const user = userEvent.setup();
+    await screen.findByText('فصل النحو');
+
+    await user.click(screen.getByRole('button', { name: 'تجهيز فصول العام' }));
+
+    await waitFor(() => expect(http.countOf('POST /sections/provision')).toBe(1));
+    expect(await screen.findByText('فصول العام مجهّزة بالفعل.')).toBeDefined();
   });
 });

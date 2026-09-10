@@ -59,4 +59,22 @@ export interface SectionDetail {
   levelId: number;
   branchId: number;
   academicYearId: number;
+  /* The API's `SectionView` has always carried these; they were left unmodelled
+     while only the attendance and score grids read a class. The class detail
+     screen shows the roster count and drives its teachers tab from them. */
+  defaultMode: string;
+  capacity: number | null;
+  enrolledCount: number;
+  teachers: SectionTeacher[];
+}
+
+/** One enrolment row on a class roster — `GET /enrollments?sectionId=`. */
+export interface Enrollment {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentCode: string;
+  entryType: string;
+  status: string;
+  isHistorical: boolean;
 }

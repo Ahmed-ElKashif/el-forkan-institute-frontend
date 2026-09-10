@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, ConfirmDialog, Toast } from '../../ds';
 import { ListSkeleton } from '../../shared/react/PagedList';
@@ -14,15 +13,17 @@ import type { TimetableSlot } from './timetable.model';
 
 type ToastState = { tone: 'success' | 'danger'; message: string };
 
-/** The timetable editor for one section (head-teacher only, reached from the
- *  section picker). Builds the weekly slots; a teacher double-booking is caught
- *  server-side and shown in the slot dialog. "Generate sessions" turns the
- *  timetable into the term's dated sessions. This component orchestrates —
- *  fetching, dialog state and deletes — while `WeekGrid` renders. */
-export function TimetableEditorPage() {
+/** The weekly timetable for one class, as a tab on the class detail screen.
+ *
+ *  Builds the slots; a teacher double-booking is caught server-side and shown in
+ *  the slot dialog. "Generate sessions" turns the timetable into the term's
+ *  dated sessions. This component orchestrates — fetching, dialog state and
+ *  deletes — while `WeekGrid` renders.
+ *
+ *  Takes the class id as a prop rather than reading the route: it is one tab of
+ *  a screen that already knows which class it is showing. */
+export function SectionTimetableTab({ sectionId }: { sectionId: string }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { sectionId = '' } = useParams();
 
   const section = useGetSectionQuery(sectionId, { skip: sectionId === '' });
   const slots = useTimetableSlotsQuery(sectionId, { skip: sectionId === '' });
@@ -51,13 +52,7 @@ export function TimetableEditorPage() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="secondary" icon="chevron-right" iconMirror onClick={() => navigate('/timetable')}>
-          {t('timetable.back')}
-        </Button>
-        <h1 className="m-0 text-lg font-bold text-ink-900">
-          {section.data ? t('timetable.heading', { name: section.data.name }) : t('timetable.headingPlain')}
-        </h1>
+      <div className="flex flex-wrap items-center gap-2">
         <div className="ms-auto flex gap-2">
           <Button
             variant="secondary"
