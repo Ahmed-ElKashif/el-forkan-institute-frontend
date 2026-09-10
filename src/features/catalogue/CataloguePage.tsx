@@ -15,28 +15,41 @@ import {
 } from '../../ds';
 import { useDebouncedValue } from '../../shared/react/useDebouncedValue';
 import { PagedList, ListSkeleton } from '../../shared/react/PagedList';
+import { useTabParam } from '../../shared/react/useTabParam';
+import { CurriculumPage } from '../curriculum';
 import { useBooksQuery, useLevelsQuery, useSubjectsQuery } from './catalogue.api';
 import { LevelEditDialog } from './LevelEditDialog';
 import { SubjectFormDialog } from './SubjectFormDialog';
 import { BookFormDialog } from './BookFormDialog';
 import type { Book, Level, LevelFlags, Subject } from './catalogue.model';
 
-type TabKey = 'levels' | 'subjects' | 'books';
+const TAB_KEYS = ['levels', 'subjects', 'books', 'curriculum'] as const;
+type TabKey = (typeof TAB_KEYS)[number];
 type ToastState = { tone: 'success' | 'danger'; message: string };
 const LEVEL_FLAGS: (keyof LevelFlags)[] = ['isOptional', 'isTerminal', 'allowsCarry', 'grantsCertificate', 'requiresCleanEntry'];
 
-/** The catalogue (head-teacher only, gated): levels' progression flags, and the
- *  subject and book registries. One tabbed screen; each list is columns plus an
- *  empty state over `PagedList` (levels excepted — the API returns them whole). */
+/** The catalogue (head-teacher only, gated): levels' progression flags, the
+ *  subject and book registries, and the curriculum built from them.
+ *
+ *  The curriculum sits here rather than on a destination of its own because it
+ *  is assembled *out of* this screen's other three tabs — a curriculum row is a
+ *  subject, at a level, for a term, optionally citing a book. Splitting them
+ *  made the head teacher leave the screen to add the subject they were about to
+ *  reference.
+ *
+ *  Each list is columns plus an empty state over `PagedList` (levels excepted —
+ *  the API returns them whole). The tab lives in `?tab=` so the retired
+ *  `/curriculum` route can redirect straight into it. */
 export function CataloguePage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<TabKey>('subjects');
+  const [tab, setTab] = useTabParam<TabKey>(TAB_KEYS, 'subjects');
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const tabs: TabItem[] = [
     { key: 'levels', label: t('catalogue.tabs.levels') },
     { key: 'subjects', label: t('catalogue.tabs.subjects') },
     { key: 'books', label: t('catalogue.tabs.books') },
+    { key: 'curriculum', label: t('catalogue.tabs.curriculum') },
   ];
 
   return (
@@ -45,6 +58,9 @@ export function CataloguePage() {
       {tab === 'levels' ? <LevelsTab onToast={setToast} /> : null}
       {tab === 'subjects' ? <SubjectsTab onToast={setToast} /> : null}
       {tab === 'books' ? <BooksTab onToast={setToast} /> : null}
+      {/* The curriculum builder brings its own year/level/term filter bar, which
+          sits inside its tab exactly as the subjects search does. */}
+      {tab === 'curriculum' ? <CurriculumPage /> : null}
 
       {toast ? (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">

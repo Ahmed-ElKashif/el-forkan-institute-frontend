@@ -7,6 +7,7 @@ import {
   Checkbox,
   CommitBar,
   DataTable,
+  type ActionItem,
   EmptyState,
   Field,
   Select,
@@ -19,6 +20,7 @@ import {
 } from '../../ds';
 import { useCurrentAcademicYearQuery, useAcademicYearsQuery } from '../../shared/api/calendar';
 import { usePreviewPromotionMutation, useConfirmPromotionMutation } from './promotion.api';
+import { PromotionDecisionDialog } from './PromotionDecisionDialog';
 import type { PromotionDecision, PromotionRow } from './promotion.model';
 
 const DECISION_TONE: Record<PromotionDecision, BadgeProps['tone']> = {
@@ -38,9 +40,13 @@ const COUNT_TONES: { decision: PromotionDecision; tone: CommitCount['tone'] }[] 
   { decision: 'repeat', tone: 'skip' },
 ];
 
-/** Year-end promotion (head-teacher only): preview §4.3's decision for every
- *  enrolment, then confirm exactly those rows. The preview writes nothing; the
- *  confirm is the only write, and a blocked row is never included in it. */
+/** Year-end promotion: preview §4.3's decision for every enrolment, edit any of
+ *  them with a reason, then confirm exactly those rows.
+ *
+ *  Open to both roles, scoped rather than restricted — a teacher sees and
+ *  decides their own classes, a head teacher the whole branch. The preview
+ *  writes nothing; the confirm is the only write, and a blocked row is never
+ *  included in it. */
 export function PromotionPage() {
   const { t } = useTranslation();
   const year = useCurrentAcademicYearQuery();
@@ -119,7 +125,21 @@ export function PromotionPage() {
         </div>
       )}
 
-      {rows ? <PreviewResult rows={rows} confirming={confirmState.isLoading} onConfirm={runConfirm} /> : null}
+      {rows ? (
+        <PreviewResult
+          rows={rows}
+          afterMakeup={afterMakeup}
+          confirming={confirmState.isLoading}
+          onConfirm={runConfirm}
+          /* Re-run the preview rather than patching the row in place: the
+             override is persisted server-side, and re-reading is what proves it
+             will survive the replay `confirm` performs. */
+          onOverridden={(message) => {
+            setToast({ tone: 'success', message });
+            void runPreview();
+          }}
+        />
+      ) : null}
 
       {toast ? (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
@@ -132,14 +152,19 @@ export function PromotionPage() {
 
 function PreviewResult({
   rows,
+  afterMakeup,
   confirming,
   onConfirm,
+  onOverridden,
 }: {
   rows: PromotionRow[];
+  afterMakeup: boolean;
   confirming: boolean;
   onConfirm: (enrollmentIds: string[]) => void;
+  onOverridden: (message: string) => void;
 }) {
   const { t } = useTranslation();
+  const [editing, setEditing] = useState<PromotionRow | null>(null);
 
   if (rows.length === 0) {
     return <EmptyState icon="users" title={t('promotion.empty.title')} description={t('promotion.empty.description')} />;
@@ -162,7 +187,22 @@ function PreviewResult({
     {
       key: 'decision',
       header: t('promotion.columns.decision'),
-      render: (r) => <Badge tone={DECISION_TONE[r.decision]}>{t(`promotion.decision.${r.decision}`)}</Badge>,
+      /* An override shows what it replaced, struck through. Hiding the engine's
+         verdict would leave nobody able to tell a considered disagreement from
+         a mis-click. */
+      render: (r) => (
+        <span className="inline-flex items-center gap-2">
+          <Badge tone={DECISION_TONE[r.decision]}>{t(`promotion.decision.${r.decision}`)}</Badge>
+          {r.override ? (
+            <>
+              <span className="text-xs text-ink-400 line-through">
+                {t(`promotion.decision.${r.computedDecision}`)}
+              </span>
+              <Badge tone="warning">{t('promotion.override.badge')}</Badge>
+            </>
+          ) : null}
+        </span>
+      ),
     },
     {
       key: 'failed',
@@ -181,6 +221,20 @@ function PreviewResult({
     },
   ];
 
+  /* A blocked row gets no menu: `confirm` refuses it outright, so offering a
+     decision the run will not honour would be a lie. */
+  const rowActions = (row: PromotionRow): ActionItem[] =>
+    row.blocker
+      ? []
+      : [
+          {
+            key: 'override',
+            label: t('promotion.override.action'),
+            icon: 'pencil',
+            onSelect: () => setEditing(row),
+          },
+        ];
+
   return (
     <div className="space-y-4">
       <DataTable
@@ -189,7 +243,20 @@ function PreviewResult({
         rows={rows}
         getRowKey={(r) => r.enrollmentId}
         rowTone={(r) => (r.blocker ? 'danger' : undefined)}
+        rowActions={rowActions}
       />
+
+      {editing ? (
+        <PromotionDecisionDialog
+          row={editing}
+          afterMakeup={afterMakeup}
+          onClose={() => setEditing(null)}
+          onSaved={(message) => {
+            setEditing(null);
+            onOverridden(message);
+          }}
+        />
+      ) : null}
       <CommitBar
         counts={counts}
         note={blockedCount > 0 ? t('promotion.blockedNote', { count: formatNumber(blockedCount) }) : t('promotion.confirmNote')}

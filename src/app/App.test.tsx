@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from './App';
 import { AuthGateway, AuthService, MemoryTokenStore, type AuthUser } from '../features/auth';
@@ -163,6 +163,67 @@ describe('App', () => {
     expect(screen.queryByText('الاستيراد')).toBeNull();
     expect(screen.queryByText('الشهادات')).toBeNull();
     expect(screen.queryByText('سجل المراجعة')).toBeNull();
+  });
+
+  it('sends a retired /timetable/:id link to that class’s timetable tab', async () => {
+    /* The timetable stopped being a destination of its own; existing links and
+       bookmarks must still land somewhere useful rather than on the catch-all. */
+    window.history.pushState({}, '', '/timetable/sec-9');
+    const { auth, http } = containerWith();
+    render(<App container={{ auth, http }} />);
+
+    await signInAs(USER);
+    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/sections/sec-9');
+      expect(window.location.search).toBe('?tab=timetable');
+    });
+  });
+
+  it('sends the retired /timetable picker to the class list', async () => {
+    window.history.pushState({}, '', '/timetable');
+    const { auth, http } = containerWith();
+    render(<App container={{ auth, http }} />);
+
+    await signInAs(USER);
+    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+
+    await waitFor(() => expect(window.location.pathname).toBe('/sections'));
+  });
+
+  /* Both stopped being destinations: the curriculum is built out of the
+     catalogue's own levels, subjects and books, and export is the import's other
+     direction. Existing links must land in the tab that absorbed them.
+
+     One render each — the router reads the URL when it mounts, so a pushState
+     between assertions would not navigate. */
+  it('sends a retired /curriculum link into the catalogue’s curriculum tab', async () => {
+    window.history.pushState({}, '', '/curriculum');
+    const { auth, http } = containerWith();
+    render(<App container={{ auth, http }} />);
+
+    await signInAs(USER);
+    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/catalogue');
+      expect(window.location.search).toBe('?tab=curriculum');
+    });
+  });
+
+  it('sends a retired /exports link into the import screen’s export tab', async () => {
+    window.history.pushState({}, '', '/exports');
+    const { auth, http } = containerWith();
+    render(<App container={{ auth, http }} />);
+
+    await signInAs(USER);
+    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/imports');
+      expect(window.location.search).toBe('?tab=export');
+    });
   });
 
   it('shows a teacher a 403 when they open a head-teacher-only URL directly', async () => {

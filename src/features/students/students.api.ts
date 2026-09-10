@@ -2,6 +2,7 @@ import { api } from '../../shared/api/api';
 import { DEFAULT_PAGE_SIZE, toQueryString, type Page } from '../../shared/api/pagination';
 import type {
   AttendanceSummary,
+  CarriedSubjectGroup,
   EnrollmentHistoryItem,
   ExamResult,
   Placement,
@@ -73,6 +74,12 @@ const studentsApi = api.injectEndpoints({
       query: (id) => ({ path: `/students/${id}/exam-results` }),
       providesTags: (_result, _error, id) => [{ type: 'Student', id }],
     }),
+    /* Tagged per-student like its sibling panels, so a mark that settles a carry
+       refreshes this list along with the scores that settled it. */
+    studentCarriedSubjects: build.query<CarriedSubjectGroup[], string>({
+      query: (id) => ({ path: `/students/${id}/carried-subjects` }),
+      providesTags: (_result, _error, id) => [{ type: 'Student', id }],
+    }),
     studentPlacements: build.query<Placement[], string>({
       query: (id) => ({ path: `/students/${id}/placements` }),
       providesTags: (_result, _error, id) => [{ type: 'Student', id }],
@@ -104,6 +111,7 @@ export const {
   useStudentEnrollmentsQuery,
   useStudentAttendanceQuery,
   useStudentExamResultsQuery,
+  useStudentCarriedSubjectsQuery,
   useStudentPlacementsQuery,
   useLazyRevealNationalIdQuery,
   useWarnAbsenceMutation,

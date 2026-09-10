@@ -12,7 +12,7 @@ import { toQueryString } from '../../shared/api/pagination';
 import { stubHttpClient, type StubRoutes } from '../../test/stub-http-client';
 import '../../shared/i18n';
 
-/* The profile composes five independent reads (record + four panels) behind the
+/* The profile composes six independent reads (record + five panels) behind the
    real auth seam and store. These prove the identity and academic record render
    from those reads, and that an unreachable student shows the not-found state
    rather than a blank frame — the panels never fire in that case. */
@@ -64,6 +64,12 @@ const PROFILE_ROUTES: StubRoutes = {
   },
   'GET /students/s1/exam-results': [
     { id: 'r1', subjectName: 'الفقه', termNumber: 1, examType: 'term_1', score: 85, maxScore: 100, passScore: 50, isAbsent: false, result: 'pass' },
+  ],
+  // The case the head teacher describes: sitting المستوى الثالث while still
+  // owing one subject from the first level and one from the second.
+  'GET /students/s1/carried-subjects': [
+    { originLevelId: 2, originLevelName: 'المستوى الأول', originHijriYear: 1446, subjects: [{ subjectId: 7, subjectName: 'الصرف', status: 'pending', clearedAt: null }] },
+    { originLevelId: 3, originLevelName: 'المستوى الثاني', originHijriYear: 1447, subjects: [{ subjectId: 9, subjectName: 'التفسير', status: 'cleared', clearedAt: '2026-05-01T00:00:00.000Z' }] },
   ],
   'GET /students/s1/placements': [
     { id: 'p1', method: 'entrance_exam', score: 40, maxScore: 50, passScore: 25, isPassed: true, placedLevelId: 2, assessedOn: '2026-06-01', notes: null },
@@ -117,6 +123,27 @@ describe('StudentProfilePage', () => {
     expect(await screen.findByText('حاضر')).toBeDefined(); // attendance tally label
     expect(await screen.findByText('الفقه')).toBeDefined(); // exam-result subject
     expect(await screen.findByText('entrance_exam')).toBeDefined(); // placement method
+  });
+
+  it('lists carried subjects under the level that produced them', async () => {
+    renderProfile('s1', PROFILE_ROUTES);
+
+    expect(await screen.findByText('المواد المحمولة')).toBeDefined();
+    // Grouped by origin level, and a settled carry still shows — "passed it in
+    // 1447" is what the head teacher looks for at the COMP gate.
+    expect(await screen.findByText('من المستوى الأول')).toBeDefined();
+    expect(await screen.findByText('الصرف')).toBeDefined();
+    expect(await screen.findByText('غير مجتازة')).toBeDefined();
+    expect(await screen.findByText('تم اجتيازها')).toBeDefined();
+  });
+
+  it('hides the carried-subjects panel entirely when the student owes nothing', async () => {
+    // Carrying nothing is the normal case; an empty card would read as a
+    // warning where there is none.
+    renderProfile('s1', { ...PROFILE_ROUTES, 'GET /students/s1/carried-subjects': [] });
+
+    await screen.findByText('أحمد سالم عبد الله');
+    expect(screen.queryByText('المواد المحمولة')).toBeNull();
   });
 
   it('shows the not-found state for a student it cannot reach', async () => {

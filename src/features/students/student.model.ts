@@ -136,6 +136,25 @@ export interface ExamResult {
   result: string;
 }
 
+/** One subject carried from an earlier level (R13/R14). `pending` still counts
+ *  against the COMP gate; `cleared` means the student has since passed it. */
+export interface CarriedSubject {
+  subjectId: number;
+  subjectName: string;
+  status: string;
+  clearedAt: string | null;
+}
+
+/** The debt from one earlier level — `GET /students/:id/carried-subjects`.
+ *  Grouped by the level that produced the failure, so the profile reads the way
+ *  the head teacher reads it off the paper roster. */
+export interface CarriedSubjectGroup {
+  originLevelId: number;
+  originLevelName: string;
+  originHijriYear: number | null;
+  subjects: CarriedSubject[];
+}
+
 /** A placement/entrance assessment — `GET /students/:id/placements`. */
 export interface Placement {
   id: string;

@@ -14,6 +14,7 @@ export { ProtectedRoute } from './ProtectedRoute';
 export { RequireRole } from './RequireRole';
 export { LoginPage } from './LoginPage';
 export { ResetPasswordPage } from './ResetPasswordPage';
+export { FirstLoginWelcome } from './FirstLoginWelcome';
 export { useAuth, type AuthContextValue, type AuthStatus } from './auth-context';
 
 /* Construction — consumed only by the composition root. */

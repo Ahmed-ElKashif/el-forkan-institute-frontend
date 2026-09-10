@@ -2,6 +2,7 @@ import { api } from '../../shared/api/api';
 import { DEFAULT_PAGE_SIZE, toQueryString, type Page } from '../../shared/api/pagination';
 import type {
   CreateSectionInput,
+  Enrollment,
   Section,
   SectionDetail,
   SectionsQuery,
@@ -28,8 +29,30 @@ const sectionsApi = api.injectEndpoints({
       query: (id) => ({ path: `/sections/${id}` }),
       providesTags: ['Section'],
     }),
+    /* The class roster. Tagged 'Section' so a transfer or a new enrolment
+       refreshes the list the detail page is showing. */
+    listEnrollments: build.query<Page<Enrollment>, { sectionId: string; page: number }>({
+      query: ({ sectionId, page }) => ({
+        path: `/enrollments?${toQueryString({
+          sectionId,
+          page,
+          pageSize: DEFAULT_PAGE_SIZE,
+        })}`,
+      }),
+      providesTags: ['Section'],
+    }),
     createSection: build.mutation<Section, CreateSectionInput>({
       query: (body) => ({ method: 'POST', path: '/sections', body }),
+      invalidatesTags: ['Section'],
+    }),
+    /* Creates the year's whole class list — one per level per gender. This is
+       how classes come into existence; `createSection` survives only for the
+       import's recovery path. Idempotent, so pressing it twice is harmless. */
+    provisionSections: build.mutation<
+      { created: number; total: number },
+      { academicYearId: number; branchId?: number | null }
+    >({
+      query: (body) => ({ method: 'POST', path: '/sections/provision', body }),
       invalidatesTags: ['Section'],
     }),
     updateSection: build.mutation<Section, { id: string; patch: UpdateSectionInput }>({
@@ -59,7 +82,9 @@ const sectionsApi = api.injectEndpoints({
 export const {
   useListSectionsQuery,
   useGetSectionQuery,
+  useListEnrollmentsQuery,
   useCreateSectionMutation,
+  useProvisionSectionsMutation,
   useUpdateSectionMutation,
   useAssignTeacherMutation,
   useUnassignTeacherMutation,

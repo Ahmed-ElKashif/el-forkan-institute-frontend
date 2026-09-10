@@ -75,6 +75,7 @@ export { RoleGate, type RoleGateProps } from './navigation/RoleGate';
 /* --- brand --------------------------------------------------------------- */
 export { Logo, type LogoProps } from './brand/Logo';
 export { ArchPanel, type ArchPanelProps } from './brand/ArchPanel';
+export { BrandLoader, type BrandLoaderProps } from './brand/BrandLoader';
 export { Seal, type SealProps } from './brand/Seal';
 export { PrintSheet, type PrintSheetProps, type SheetMeta } from './brand/PrintSheet';
 export { CertificateSheet, type CertificateSheetProps } from './brand/CertificateSheet';

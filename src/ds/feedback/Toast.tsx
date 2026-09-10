@@ -1,6 +1,7 @@
 import { useEffect, useRef, type HTMLAttributes, type ReactNode } from 'react';
 import { Icon, type IconName } from '../core/Icon';
 import { IconButton } from '../core/IconButton';
+import { useExitTransition } from '../useExitTransition';
 import { cn } from '../cn';
 
 const TONES = {
@@ -32,17 +33,38 @@ export function Toast({
   className,
   ...rest
 }: ToastProps) {
-  // Read the latest onDismiss through a ref so a parent re-render does not
+  // The toast owns both dismiss paths (the countdown and the ✕), so it can play
+  // a full exit before telling the parent to unmount.
+  const { closing, requestClose } = useExitTransition(onDismiss);
+
+  // Read the latest requestClose through a ref so a parent re-render does not
   // reset the countdown; the timer restarts only when the message changes.
-  const dismiss = useRef(onDismiss);
+  const close = useRef(requestClose);
   useEffect(() => {
-    dismiss.current = onDismiss;
+    close.current = requestClose;
   });
   useEffect(() => {
-    if (duration <= 0) return;
-    const id = setTimeout(() => dismiss.current?.(), duration);
-    return () => clearTimeout(id);
-  }, [duration, message]);
+    if (duration <= 0 || closing) return;
+    // Pause while the tab is hidden — a confirmation must never expire unseen in
+    // a background tab. We track the remaining time across hide/show cycles.
+    let remaining = duration;
+    let startedAt = Date.now();
+    let id = window.setTimeout(() => close.current(), remaining);
+    const onVisibility = () => {
+      if (document.hidden) {
+        window.clearTimeout(id);
+        remaining -= Date.now() - startedAt;
+      } else {
+        startedAt = Date.now();
+        id = window.setTimeout(() => close.current(), Math.max(0, remaining));
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [duration, message, closing]);
 
   const t = TONES[tone];
   return (
@@ -52,7 +74,9 @@ export function Toast({
         aria-live="polite"
         className={cn(
           'pointer-events-auto flex min-w-80 max-w-110 items-start gap-3 rounded-lg border border-default bg-surface px-4 py-3 shadow-modal',
-          'motion-safe:animate-[ef-toast-in_var(--dur-base)_var(--ease-out)]',
+          closing
+            ? 'motion-safe:animate-[ef-toast-out_var(--dur-base)_var(--ease-out)_forwards]'
+            : 'motion-safe:animate-[ef-toast-in_var(--dur-base)_var(--ease-out)]',
           className,
         )}
         {...rest}
@@ -62,7 +86,7 @@ export function Toast({
           <div className="text-sm font-semibold text-ink-900">{message}</div>
           {detail ? <div className="ef-num text-xs text-ink-500">{detail}</div> : null}
         </div>
-        {onDismiss ? <IconButton icon="x" label="إخفاء" size="sm" onClick={onDismiss} /> : null}
+        {onDismiss ? <IconButton icon="x" label="إخفاء" size="sm" onClick={requestClose} /> : null}
       </div>
     </div>
   );
