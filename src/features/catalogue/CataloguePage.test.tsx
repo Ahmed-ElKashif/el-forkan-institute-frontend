@@ -31,7 +31,11 @@ function page<T>(items: T[]): Page<T> {
 /* The screen keeps its active tab in `?tab=`, so it needs a router even though
    it declares no routes of its own. `entry` lets a test open a specific tab the
    way the retired /curriculum redirect does. */
-function renderCatalogue(routes: StubRoutes, entry = '/catalogue') {
+function renderCatalogue(
+  routes: StubRoutes,
+  entry = '/catalogue',
+  props: { lockedLevelId?: number; tabParam?: string } = {},
+) {
   const http = stubHttpClient({
     [subjectsKey]: page([SUBJECT]),
     'GET /levels': [LEVEL],
@@ -41,7 +45,7 @@ function renderCatalogue(routes: StubRoutes, entry = '/catalogue') {
   render(
     <MemoryRouter initialEntries={[entry]}>
       <Provider store={makeStore(http)}>
-        <CataloguePage />
+        <CataloguePage {...props} />
       </Provider>
     </MemoryRouter>,
   );
@@ -90,6 +94,25 @@ describe('CataloguePage', () => {
     await waitFor(() => expect(http.countOf('POST /books')).toBe(1));
     const create = http.calls.find((c) => c.method === 'POST' && c.path === '/books');
     expect(create?.body).toMatchObject({ titleAr: 'التبيان' });
+  });
+
+  it('drops the all-levels tab when embedded in a level, keeping its catalogue', async () => {
+    /* Inside a level the level is already chosen, so the embedded catalogue
+       shows only that level's curriculum and the subject/book registries it
+       draws from — never the all-levels list. */
+    renderCatalogue(
+      {
+        'GET /academic-years?page=1&pageSize=100': page([{ id: 1, hijriYear: 1447 }]),
+        'GET /academic-years/1/curriculum?levelId=1&termNumber=1': [],
+      },
+      '/catalogue',
+      { lockedLevelId: 1, tabParam: 'cat' },
+    );
+
+    expect(await screen.findByRole('tab', { name: 'المنهج' })).toBeDefined();
+    expect(screen.getByRole('tab', { name: 'المواد' })).toBeDefined();
+    expect(screen.getByRole('tab', { name: 'الكتب' })).toBeDefined();
+    expect(screen.queryByRole('tab', { name: 'المستويات' })).toBeNull();
   });
 
   it('opens the curriculum builder on the tab named in the URL', async () => {

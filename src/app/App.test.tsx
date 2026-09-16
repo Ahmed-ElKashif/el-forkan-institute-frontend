@@ -128,9 +128,9 @@ describe('App', () => {
     /* Step two carries the challenge id and the code. */
     const verify = http.calls.find((c) => c.path === '/auth/verify-otp');
     expect(verify?.body).toEqual({ challengeId: 'ch1', code: '123456' });
-    /* The sign-out control only exists behind the guarded route, so finding it
-       is what proves navigation actually happened. */
-    expect(await screen.findByRole('button', { name: /تسجيل الخروج/ })).toBeDefined();
+    /* The user-menu chip (name + role, opening profile/sign-out) only exists
+       behind the guarded route, so finding it proves navigation happened. */
+    expect(await screen.findByRole('button', { name: /محمود عبد الله/ })).toBeDefined();
   });
 
   it('reports a throttled sign-in as a throttle, not as a bad password', async () => {
@@ -154,8 +154,8 @@ describe('App', () => {
     render(<App container={{ auth, http }} />);
 
     await signInAs(TEACHER);
-    /* Landed inside the shell — the sign-out control only exists there. */
-    expect(await screen.findByRole('button', { name: /تسجيل الخروج/ })).toBeDefined();
+    /* Landed inside the shell — the user-menu chip only exists there. */
+    expect(await screen.findByRole('button', { name: /أحمد سالم/ })).toBeDefined();
 
     /* Shared sections stay; the three head-teacher-only ones are gone entirely,
        not rendered disabled. */
@@ -165,51 +165,46 @@ describe('App', () => {
     expect(screen.queryByText('سجل المراجعة')).toBeNull();
   });
 
-  it('sends a retired /timetable/:id link to that class’s timetable tab', async () => {
-    /* The timetable stopped being a destination of its own; existing links and
-       bookmarks must still land somewhere useful rather than on the catch-all. */
+  it('sends a retired /timetable/:id link to the level hub', async () => {
+    /* The recurring timetable and the section detail both folded into the level
+       hub (a level schedules its own class days), so old links land there. */
     window.history.pushState({}, '', '/timetable/sec-9');
     const { auth, http } = containerWith();
     render(<App container={{ auth, http }} />);
 
     await signInAs(USER);
-    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+    await screen.findByRole('button', { name: /محمود عبد الله/ });
 
-    await waitFor(() => {
-      expect(window.location.pathname).toBe('/sections/sec-9');
-      expect(window.location.search).toBe('?tab=timetable');
-    });
+    await waitFor(() => expect(window.location.pathname).toBe('/levels'));
   });
 
-  it('sends the retired /timetable picker to the class list', async () => {
+  it('sends the retired /timetable picker to the level hub', async () => {
+    /* The timetable picker and the section list both folded into the level hub
+       (a level owns both gendered classes), so the retired link lands there. */
     window.history.pushState({}, '', '/timetable');
     const { auth, http } = containerWith();
     render(<App container={{ auth, http }} />);
 
     await signInAs(USER);
-    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+    await screen.findByRole('button', { name: /محمود عبد الله/ });
 
-    await waitFor(() => expect(window.location.pathname).toBe('/sections'));
+    await waitFor(() => expect(window.location.pathname).toBe('/levels'));
   });
 
-  /* Both stopped being destinations: the curriculum is built out of the
-     catalogue's own levels, subjects and books, and export is the import's other
-     direction. Existing links must land in the tab that absorbed them.
+  /* The catalogue and curriculum moved into the level hub, and export is the
+     import's other direction. Existing links must land where they now live.
 
      One render each — the router reads the URL when it mounts, so a pushState
      between assertions would not navigate. */
-  it('sends a retired /curriculum link into the catalogue’s curriculum tab', async () => {
+  it('sends a retired /curriculum link to the level hub', async () => {
     window.history.pushState({}, '', '/curriculum');
     const { auth, http } = containerWith();
     render(<App container={{ auth, http }} />);
 
     await signInAs(USER);
-    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+    await screen.findByRole('button', { name: /محمود عبد الله/ });
 
-    await waitFor(() => {
-      expect(window.location.pathname).toBe('/catalogue');
-      expect(window.location.search).toBe('?tab=curriculum');
-    });
+    await waitFor(() => expect(window.location.pathname).toBe('/levels'));
   });
 
   it('sends a retired /exports link into the import screen’s export tab', async () => {
@@ -218,7 +213,7 @@ describe('App', () => {
     render(<App container={{ auth, http }} />);
 
     await signInAs(USER);
-    await screen.findByRole('button', { name: /تسجيل الخروج/ });
+    await screen.findByRole('button', { name: /محمود عبد الله/ });
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/imports');

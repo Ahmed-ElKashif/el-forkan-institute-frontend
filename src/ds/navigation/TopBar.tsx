@@ -1,12 +1,29 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { Icon } from '../core/Icon';
 import { IconButton } from '../core/IconButton';
+import { Menu, type ActionItem } from '../core/Menu';
 import type { Role } from './SideNav';
 import { cn } from '../cn';
 
 export interface TopBarUser {
   name: string;
   role: Role;
+}
+
+/** The signed-in identity: avatar, name, role. Shared by the static chip and the
+ *  menu-trigger chip. */
+function UserChip({ user }: { user: TopBarUser }) {
+  return (
+    <>
+      <span className="grid size-8 place-items-center rounded-full bg-teal-50 text-teal-700">
+        <Icon name="user" size={16} />
+      </span>
+      <div className="text-start leading-[1.3]">
+        <div className="text-sm font-semibold text-ink-900">{user.name}</div>
+        <div className="text-xs text-ink-500">{user.role === 'head_teacher' ? 'مدير' : 'معلّم'}</div>
+      </div>
+    </>
+  );
 }
 
 export interface TopBarProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
@@ -18,6 +35,9 @@ export interface TopBarProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> 
   context?: ReactNode;
   actions?: ReactNode;
   user?: TopBarUser;
+  /** Turns the user chip into a dropdown (profile, sign out). Without it the
+   *  chip is static. */
+  userMenu?: ActionItem[];
   onMenu?: () => void;
 }
 
@@ -29,6 +49,7 @@ export function TopBar({
   context,
   actions,
   user,
+  userMenu,
   onMenu,
   className,
   ...rest
@@ -62,16 +83,31 @@ export function TopBar({
       <div className="flex flex-none items-center gap-3 ms-auto">
         {actions}
         {user ? (
-          <div className="flex items-center gap-2 border-s border-subtle ps-3">
-            <span className="grid size-8 place-items-center rounded-full bg-teal-50 text-teal-700">
-              <Icon name="user" size={16} />
-            </span>
-            <div className="leading-[1.3]">
-              <div className="text-sm font-semibold text-ink-900">{user.name}</div>
-              <div className="text-xs text-ink-500">
-                {user.role === 'head_teacher' ? 'مدير' : 'معلّم'}
+          <div className="border-s border-subtle ps-3">
+            {userMenu && userMenu.length > 0 ? (
+              <Menu
+                items={userMenu}
+                trigger={({ open, toggle }) => (
+                  <button
+                    type="button"
+                    onClick={toggle}
+                    aria-haspopup="menu"
+                    aria-expanded={open}
+                    className={cn(
+                      'flex cursor-pointer items-center gap-2 rounded-full border border-subtle bg-surface py-1 pe-3 ps-1',
+                      'transition-colors duration-[var(--dur-fast)] hover:bg-canvas',
+                      'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+                    )}
+                  >
+                    <UserChip user={user} />
+                  </button>
+                )}
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <UserChip user={user} />
               </div>
-            </div>
+            )}
           </div>
         ) : null}
       </div>

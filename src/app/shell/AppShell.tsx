@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Button, SideNav, TopBar, cn, formatHijriDate, type NavItem } from '../../ds';
+import { SideNav, TopBar, cn, formatHijriDate, type ActionItem, type NavItem } from '../../ds';
 import { useAuth } from '../../features/auth';
 import { DESTINATIONS, activeDestination } from './navigation';
 
@@ -17,7 +17,6 @@ export function AppShell() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [signingOut, setSigningOut] = useState(false);
   // Mobile drawer state. On lg+ the sidebar is a permanent rail and this is
   // ignored; below lg it is an off-canvas drawer. It closes on nav-item select
   // and scrim tap (below) — the only things reachable while it is open.
@@ -28,27 +27,29 @@ export function AppShell() {
      and fails safe to the narrower sidebar rather than leaking gated items. */
   const role = user?.role ?? 'teacher';
 
-  const items: NavItem[] = DESTINATIONS.map((destination) => ({
-    key: destination.key,
-    label: t(destination.labelKey),
-    icon: destination.icon,
-    group: t(destination.groupKey),
-    headTeacherOnly: destination.headTeacherOnly,
-  }));
+  // Hidden destinations (the profile) own a route and a title but never a
+  // sidebar row — they are reached from the user menu, not the nav rail.
+  const items: NavItem[] = DESTINATIONS.filter((destination) => !destination.hidden).map(
+    (destination) => ({
+      key: destination.key,
+      label: t(destination.labelKey),
+      icon: destination.icon,
+      group: t(destination.groupKey),
+      headTeacherOnly: destination.headTeacherOnly,
+    }),
+  );
 
   function handleSelect(key: string) {
     const target = DESTINATIONS.find((destination) => destination.key === key);
     if (target) navigate(target.path);
   }
 
-  async function handleSignOut() {
-    setSigningOut(true);
-    try {
-      await signOut();
-    } finally {
-      setSigningOut(false);
-    }
-  }
+  // The user chip's dropdown: open your profile, or sign out. Sign-out flips the
+  // session to anonymous, which redirects to login — no in-place spinner needed.
+  const userMenu: ActionItem[] = [
+    { key: 'profile', label: t('nav.profile'), icon: 'user', onSelect: () => navigate('/profile') },
+    { key: 'signOut', label: t('common.signOut'), icon: 'log-out', onSelect: () => void signOut() },
+  ];
 
   return (
     // overflow-x-hidden keeps the off-canvas mobile drawer (translated past the
@@ -89,18 +90,7 @@ export function AppShell() {
           title={t(active.labelKey)}
           date={formatHijriDate()}
           user={user ? { name: user.fullName, role: user.role } : undefined}
-          actions={
-            <Button
-              variant="secondary"
-              size="sm"
-              icon="log-out"
-              iconMirror
-              loading={signingOut}
-              onClick={handleSignOut}
-            >
-              {t('common.signOut')}
-            </Button>
-          }
+          userMenu={userMenu}
         />
 
         {/* One page gutter for every in-shell screen: comfortable padding so

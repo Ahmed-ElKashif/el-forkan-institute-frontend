@@ -8,14 +8,14 @@ const EXAMS_PAGE_SIZE = 100;
 
 const scoresApi = api.injectEndpoints({
   endpoints: (build) => ({
-    listExams: build.query<Page<Exam>, { termId: number; levelId: number }>({
-      query: ({ termId, levelId }) => ({
-        path: `/exams?${toQueryString({ termId, levelId, page: 1, pageSize: EXAMS_PAGE_SIZE })}`,
+    listExams: build.query<Page<Exam>, { levelId: number; termId?: number; date?: string }>({
+      query: ({ levelId, termId, date }) => ({
+        path: `/exams?${toQueryString({ levelId, termId, date, page: 1, pageSize: EXAMS_PAGE_SIZE })}`,
       }),
       providesTags: ['ExamScores'],
     }),
-    // Create & schedule an exam (§3, both roles). Invalidates the exam list so
-    // the picker shows it immediately.
+    // Create & schedule an exam (head-teacher; the API gates it). Invalidates the
+    // exam list so the picker shows it immediately.
     createExam: build.mutation<Exam, CreateExamInput>({
       query: (body) => ({ method: 'POST', path: '/exams', body }),
       invalidatesTags: ['ExamScores'],

@@ -25,6 +25,10 @@ import type { Book, Level, LevelFlags, Subject } from './catalogue.model';
 
 const TAB_KEYS = ['levels', 'subjects', 'books', 'curriculum'] as const;
 type TabKey = (typeof TAB_KEYS)[number];
+// Inside a level, the all-levels tab makes no sense — the level is already
+// chosen — so the embedded catalogue shows only this level's curriculum and the
+// subject/book registries it draws from, curriculum first.
+const LEVEL_TAB_KEYS = ['curriculum', 'subjects', 'books'] as const;
 type ToastState = { tone: 'success' | 'danger'; message: string };
 const LEVEL_FLAGS: (keyof LevelFlags)[] = ['isOptional', 'isTerminal', 'allowsCarry', 'grantsCertificate', 'requiresCleanEntry'];
 
@@ -39,18 +43,28 @@ const LEVEL_FLAGS: (keyof LevelFlags)[] = ['isOptional', 'isTerminal', 'allowsCa
  *
  *  Each list is columns plus an empty state over `PagedList` (levels excepted —
  *  the API returns them whole). The tab lives in `?tab=` so the retired
- *  `/curriculum` route can redirect straight into it. */
-export function CataloguePage() {
+ *  `/curriculum` route can redirect straight into it.
+ *
+ *  Embedded in the level hub, `lockedLevelId` scopes the curriculum tab to that
+ *  level, and `tabParam` moves this screen's own tab onto a different query key
+ *  (`?cat=`) so it does not collide with the hub's `?tab=`. */
+export function CataloguePage({
+  lockedLevelId,
+  tabParam,
+}: { lockedLevelId?: number; tabParam?: string } = {}) {
   const { t } = useTranslation();
-  const [tab, setTab] = useTabParam<TabKey>(TAB_KEYS, 'subjects');
+  const embedded = lockedLevelId != null;
+  const keys: readonly TabKey[] = embedded ? LEVEL_TAB_KEYS : TAB_KEYS;
+  const [tab, setTab] = useTabParam<TabKey>(keys, embedded ? 'curriculum' : 'subjects', tabParam);
   const [toast, setToast] = useState<ToastState | null>(null);
 
-  const tabs: TabItem[] = [
-    { key: 'levels', label: t('catalogue.tabs.levels') },
-    { key: 'subjects', label: t('catalogue.tabs.subjects') },
-    { key: 'books', label: t('catalogue.tabs.books') },
-    { key: 'curriculum', label: t('catalogue.tabs.curriculum') },
-  ];
+  const allTabs: Record<TabKey, TabItem> = {
+    levels: { key: 'levels', label: t('catalogue.tabs.levels') },
+    subjects: { key: 'subjects', label: t('catalogue.tabs.subjects') },
+    books: { key: 'books', label: t('catalogue.tabs.books') },
+    curriculum: { key: 'curriculum', label: t('catalogue.tabs.curriculum') },
+  };
+  const tabs: TabItem[] = keys.map((key) => allTabs[key]);
 
   return (
     <section className="space-y-4">
@@ -59,8 +73,9 @@ export function CataloguePage() {
       {tab === 'subjects' ? <SubjectsTab onToast={setToast} /> : null}
       {tab === 'books' ? <BooksTab onToast={setToast} /> : null}
       {/* The curriculum builder brings its own year/level/term filter bar, which
-          sits inside its tab exactly as the subjects search does. */}
-      {tab === 'curriculum' ? <CurriculumPage /> : null}
+          sits inside its tab exactly as the subjects search does. Embedded in a
+          level, `lockedLevelId` collapses that bar to the term toggle. */}
+      {tab === 'curriculum' ? <CurriculumPage lockedLevelId={lockedLevelId} /> : null}
 
       {toast ? (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">

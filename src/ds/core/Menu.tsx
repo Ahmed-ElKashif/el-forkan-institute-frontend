@@ -93,6 +93,34 @@ export function ActionMenu({ items, label = 'إجراءات' }: { items: ActionI
   );
 }
 
+/** A dropdown with a caller-supplied trigger (not a kebab) — e.g. the top bar's
+ *  user chip opening its profile/sign-out menu. The trigger render-prop gets
+ *  `open` and `toggle`, so it can show its own expanded state. */
+export function Menu({
+  trigger,
+  items,
+  align = 'end',
+}: {
+  trigger: (state: { open: boolean; toggle: () => void }) => ReactNode;
+  items: ActionItem[];
+  align?: 'start' | 'end';
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useDismiss(open, () => setOpen(false), ref);
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      {trigger({ open, toggle: () => setOpen((value) => !value) })}
+      {open ? (
+        <div className={cn('absolute z-40 mt-1', align === 'end' ? 'end-0' : 'start-0')}>
+          <MenuList items={items} onClose={() => setOpen(false)} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** The same action list opened at a point — the row's right-click menu. */
 export function ContextMenu({
   x,

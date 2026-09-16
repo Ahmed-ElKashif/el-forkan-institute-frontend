@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -9,16 +8,18 @@ import {
   Button,
   DataTable,
   EmptyState,
+  Field,
+  Select,
   Skeleton,
   Toast,
   cn,
+  formatClassDate,
   formatNumber,
   type AttendanceStatus,
   type Column,
 } from '../../ds';
-import { useGetSectionQuery } from '../sections';
-import { useAcademicYearQuery, defaultTerm } from '../../shared/api/calendar';
-import { TermPicker } from '../../shared/react/TermPicker';
+import { useListSessionsQuery } from '../sessions';
+import { useAcademicYearQuery, defaultTerm, type Term } from '../../shared/api/calendar';
 import { useAttendanceGridQuery, useSaveSessionAttendanceMutation } from './attendance.api';
 import type {
   AbsenceWarning,
@@ -44,55 +45,68 @@ function editKey(sessionId: string, enrollmentId: string): string {
   return `${sessionId}|${enrollmentId}`;
 }
 
-/** The attendance grid for one section: pick a term, then take attendance as a
- *  student × session sheet. Reached from the sections picker at
- *  `/attendance/:sectionId`. */
-export function AttendanceGridPage() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { sectionId = '' } = useParams();
+/** The class days a cohort has, newest last, from its sessions. */
+function classDayDates(sessions: Array<{ sessionDate: string }>): string[] {
+  return [...new Set(sessions.map((s) => s.sessionDate))].sort();
+}
 
-  const section = useGetSectionQuery(sectionId, { skip: sectionId === '' });
-  const year = useAcademicYearQuery(section.data?.academicYearId ?? 0, {
-    skip: section.data == null,
-  });
+/** The term a date falls in, so the grid's running absence count is scoped to
+ *  the right term even though the teacher navigates by day. */
+function termForDate(terms: Term[], date: string): Term | null {
+  return (
+    terms.find((term) => term.startsOn.slice(0, 10) <= date && date <= term.endsOn.slice(0, 10)) ??
+    null
+  );
+}
+
+/** The attendance tab in the level hub: date-first. The teacher picks a class
+ *  day (the cohort's scheduled dates) and the grid shows that day's periods as
+ *  columns, each headed by its subject and time — "mark Ahmed present for the
+ *  first and last class, with the class name shown". Reuses the same interactive
+ *  sheet as the term view. */
+export function AttendanceTab({
+  sectionId,
+  academicYearId,
+}: {
+  sectionId: string;
+  academicYearId: number;
+}) {
+  const { t } = useTranslation();
+  const year = useAcademicYearQuery(academicYearId, { skip: academicYearId === 0 });
+  const days = useListSessionsQuery({ sectionId, page: 1 });
 
   const terms = year.data?.terms ?? [];
-  // The chosen term is derived, not synced in an effect: null means "no choice
-  // yet", which resolves to the active term (else the first). Picking one sets
-  // the override.
-  const [chosenTermId, setChosenTermId] = useState<number | null>(null);
-  const termId = chosenTermId ?? defaultTerm(terms)?.id ?? null;
+  const dates = classDayDates(days.data?.items ?? []);
+  const [chosen, setChosen] = useState<string | null>(null);
+  // Default to the most recent class day, which is the one being marked today.
+  const date = chosen ?? dates[dates.length - 1] ?? null;
 
-  if (section.isLoading || year.isLoading) return <GridSkeleton />;
-  if (section.isError || year.isError) return <Alert tone="danger" title={t('attendance.error')} />;
-  if (terms.length === 0) {
+  if (year.isLoading || days.isLoading) return <GridSkeleton />;
+  if (dates.length === 0) {
     return (
       <EmptyState
         icon="calendar-days"
-        title={t('attendance.noTerms.title')}
-        description={t('attendance.noTerms.description')}
+        title={t('attendance.noClassDays.title')}
+        description={t('attendance.noClassDays.description')}
       />
     );
   }
 
+  const term = date != null ? (termForDate(terms, date) ?? defaultTerm(terms)) : defaultTerm(terms);
+
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-ink-900">{section.data?.name}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <TermPicker terms={terms} value={termId} onChange={setChosenTermId} />
-          <Button
-            size="sm"
-            variant="secondary"
-            icon="calendar-days"
-            onClick={() => navigate(`/sessions/${sectionId}`)}
-          >
-            {t('attendance.manageSessions')}
-          </Button>
-        </div>
-      </div>
-      {termId != null ? <Grid sectionId={sectionId} termId={termId} /> : null}
+      <Field label={t('attendance.classDay')} className="w-72">
+        <Select
+          options={dates.map((d) => ({ value: d, label: formatClassDate(d) }))}
+          value={date ?? ''}
+          onChange={(e) => setChosen(e.target.value)}
+          aria-label={t('attendance.classDay')}
+        />
+      </Field>
+      {date != null && term != null ? (
+        <Grid sectionId={sectionId} termId={term.id} date={date} />
+      ) : null}
     </section>
   );
 }
@@ -100,9 +114,9 @@ export function AttendanceGridPage() {
 /** The interactive sheet. Server data is the base; `edits` overlays the
  *  teacher's pending taps, so a save that refetches the grid never discards work
  *  in other columns. */
-function Grid({ sectionId, termId }: { sectionId: string; termId: number }) {
+function Grid({ sectionId, termId, date }: { sectionId: string; termId: number; date?: string }) {
   const { t } = useTranslation();
-  const grid = useAttendanceGridQuery({ sectionId, termId });
+  const grid = useAttendanceGridQuery({ sectionId, termId, date });
   const [save] = useSaveSessionAttendanceMutation();
 
   const [edits, setEdits] = useState<Record<string, AttendanceStatus>>({});
@@ -186,10 +200,11 @@ function Grid({ sectionId, termId }: { sectionId: string; termId: number }) {
     ...sessions.map<Column<AttendanceGridRow>>((session) => ({
       key: session.id,
       align: 'center',
-      width: 72,
+      width: date != null ? 116 : 72,
       header: (
         <ColumnHeader
           session={session}
+          dateMode={date != null}
           dirty={dirtySessions.has(session.id)}
           saving={savingSessionId === session.id}
           onSave={() => saveColumn(session)}
@@ -234,11 +249,13 @@ function StudentCell({ row, warning }: { row: AttendanceGridRow; warning: Absenc
 
 function ColumnHeader({
   session,
+  dateMode,
   dirty,
   saving,
   onSave,
 }: {
   session: AttendanceSession;
+  dateMode: boolean;
   dirty: boolean;
   saving: boolean;
   onSave: () => void;
@@ -246,7 +263,16 @@ function ColumnHeader({
   const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-1" title={session.sessionDate}>
-      <span className="ef-num">{session.sessionNo != null ? formatNumber(session.sessionNo) : '—'}</span>
+      {dateMode ? (
+        // The date-first view names the class (subject + time), so the teacher
+        // knows which period they are marking rather than a bare column number.
+        <span className="flex flex-col items-center leading-tight">
+          <span className="font-semibold text-ink-800">{session.subjectNameAr}</span>
+          <span className="ef-num text-xs text-ink-400">{session.startsAt.slice(0, 5)}</span>
+        </span>
+      ) : (
+        <span className="ef-num">{session.sessionNo != null ? formatNumber(session.sessionNo) : '—'}</span>
+      )}
       <Button
         variant="secondary"
         size="sm"

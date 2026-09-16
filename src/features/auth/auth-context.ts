@@ -15,6 +15,9 @@ export interface AuthContextValue {
   /** Second factor. On success `status` becomes `authenticated`. */
   verifyOtp: (verification: OtpVerification) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-fetch the signed-in user, e.g. after they edit their own profile, so
+   *  the shell shows the new name. No-op when signed out. */
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

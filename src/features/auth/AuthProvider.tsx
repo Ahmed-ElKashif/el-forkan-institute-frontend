@@ -61,9 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('anonymous');
   }, [auth]);
 
+  /* After the user edits their own profile. Only meaningful while signed in;
+     a failure leaves the current user in place rather than dropping the session
+     over a transient read. */
+  const refreshUser = useCallback(async () => {
+    const current = await auth.currentUser();
+    setUser(current);
+  }, [auth]);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, beginSignIn, verifyOtp, signOut }),
-    [status, user, beginSignIn, verifyOtp, signOut],
+    () => ({ status, user, beginSignIn, verifyOtp, signOut, refreshUser }),
+    [status, user, beginSignIn, verifyOtp, signOut, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

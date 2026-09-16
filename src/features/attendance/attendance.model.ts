@@ -23,6 +23,9 @@ export interface AttendanceSession {
   id: string;
   sessionNo: number | null;
   sessionDate: string;
+  startsAt: string;
+  subjectNameAr: string;
+  sheikhName: string | null;
 }
 
 export interface AttendanceGrid {

@@ -23,8 +23,12 @@ type DeleteTarget = { kind: 'row' | 'unit'; id: number; name: string };
 /** The curriculum builder (head-teacher only, gated): pick a year, level and
  *  term, then build the syllabus tree — مواد, their فروع one level deep, and the
  *  units (book + scope) under each. Every write re-reads the tree via the
- *  `Curriculum` tag, so the screen has no local state to reconcile. */
-export function CurriculumPage() {
+ *  `Curriculum` tag, so the screen has no local state to reconcile.
+ *
+ *  Embedded inside a level (the level hub's catalogue tab), `lockedLevelId`
+ *  fixes the level and hides the year+level pickers — the level and its current
+ *  year are already the page's context, leaving only the term to choose. */
+export function CurriculumPage({ lockedLevelId }: { lockedLevelId?: number } = {}) {
   const { t } = useTranslation();
   const years = useAcademicYearsQuery();
   const levels = useLevelsQuery();
@@ -36,9 +40,10 @@ export function CurriculumPage() {
   const [termNumber, setTermNumber] = useState(1);
 
   // Default to the newest year and the first level until the user picks; derived
-  // during render so there is no set-state-in-effect.
+  // during render so there is no set-state-in-effect. A locked level always
+  // wins, so the embedded builder cannot drift off its level.
   const yearId = pickedYear ?? years.data?.[0]?.id ?? null;
-  const levelId = pickedLevel ?? levels.data?.[0]?.id ?? null;
+  const levelId = lockedLevelId ?? pickedLevel ?? levels.data?.[0]?.id ?? null;
   const canQuery = yearId != null && levelId != null;
 
   const tree = useCurriculumTreeQuery(
@@ -83,12 +88,16 @@ export function CurriculumPage() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <Field label={t('curriculum.filters.year')} className="w-40">
-          <Select options={yearOptions} value={yearId ?? ''} onChange={(e) => setPickedYear(Number(e.target.value))} aria-label={t('curriculum.filters.year')} />
-        </Field>
-        <Field label={t('curriculum.filters.level')} className="w-48">
-          <Select options={levelOptions} value={levelId ?? ''} onChange={(e) => setPickedLevel(Number(e.target.value))} aria-label={t('curriculum.filters.level')} />
-        </Field>
+        {lockedLevelId == null ? (
+          <>
+            <Field label={t('curriculum.filters.year')} className="w-40">
+              <Select options={yearOptions} value={yearId ?? ''} onChange={(e) => setPickedYear(Number(e.target.value))} aria-label={t('curriculum.filters.year')} />
+            </Field>
+            <Field label={t('curriculum.filters.level')} className="w-48">
+              <Select options={levelOptions} value={levelId ?? ''} onChange={(e) => setPickedLevel(Number(e.target.value))} aria-label={t('curriculum.filters.level')} />
+            </Field>
+          </>
+        ) : null}
         <Field label={t('curriculum.filters.term')} className="w-40">
           <Select options={termOptions} value={termNumber} onChange={(e) => setTermNumber(Number(e.target.value))} aria-label={t('curriculum.filters.term')} />
         </Field>
