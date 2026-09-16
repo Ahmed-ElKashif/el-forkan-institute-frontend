@@ -1,1 +1,1 @@
-export { AttendanceGridPage } from './AttendanceGridPage';
+export { AttendanceTab } from './AttendanceSheet';

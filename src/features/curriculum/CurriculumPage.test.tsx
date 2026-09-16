@@ -36,7 +36,7 @@ function page<T>(items: T[]): Page<T> {
   return { items, total: items.length, page: 1, pageSize: 100 };
 }
 
-function renderCurriculum(routes: StubRoutes) {
+function renderCurriculum(routes: StubRoutes, props: { lockedLevelId?: number } = {}) {
   const http = stubHttpClient({
     [yearsKey]: page([YEAR]),
     'GET /levels': [LEVEL],
@@ -47,7 +47,7 @@ function renderCurriculum(routes: StubRoutes) {
   });
   render(
     <Provider store={makeStore(http)}>
-      <CurriculumPage />
+      <CurriculumPage {...props} />
     </Provider>,
   );
   return http;
@@ -81,5 +81,16 @@ describe('CurriculumPage', () => {
     await waitFor(() => expect(http.countOf('POST /curriculum/10/units')).toBe(1));
     const add = http.calls.find((c) => c.method === 'POST' && c.path === '/curriculum/10/units');
     expect((add?.body as { syllabusScopeAr?: string } | undefined)?.syllabusScopeAr).toBe('من أول الكتاب إلى باب الفاعل');
+  });
+
+  it('hides the year and level pickers when embedded in a level, keeping the term', async () => {
+    // The level hub fixes the level and its current year, so the embedded
+    // builder collapses to the term toggle — it cannot drift off its level.
+    renderCurriculum({}, { lockedLevelId: 1 });
+    await screen.findByText('لا توجد مواد في هذا المستوى والفصل بعد.');
+
+    expect(screen.queryByRole('combobox', { name: 'العام' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'المستوى' })).toBeNull();
+    expect(screen.getByRole('combobox', { name: 'الفصل' })).toBeDefined();
   });
 });

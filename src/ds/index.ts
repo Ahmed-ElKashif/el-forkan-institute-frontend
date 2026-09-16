@@ -9,13 +9,13 @@
 --------------------------------------------------------------------------- */
 
 export { cn } from './cn';
-export { formatHijriDate, formatNumber, formatPercent, formatScore } from './format';
+export { formatClassDate, formatHijriDate, formatNumber, formatPercent, formatScore } from './format';
 
 /* --- core ---------------------------------------------------------------- */
 export { Icon, type IconName, type IconProps } from './core/Icon';
 export { Button, type ButtonProps } from './core/Button';
 export { IconButton, type IconButtonProps } from './core/IconButton';
-export { ActionMenu, ContextMenu, useRowContextMenu, type ActionItem } from './core/Menu';
+export { ActionMenu, ContextMenu, Menu, useRowContextMenu, type ActionItem } from './core/Menu';
 export { Badge, type BadgeProps } from './core/Badge';
 export { Card, type CardProps } from './core/Card';
 export { StatCard, type StatCardProps } from './core/StatCard';

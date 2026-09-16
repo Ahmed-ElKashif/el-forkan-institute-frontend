@@ -99,6 +99,13 @@ export class AuthService {
     }
   }
 
+  /** Re-read the signed-in user's own profile. Used after they edit it, so the
+   *  shell reflects the new name without a full session restore (no token
+   *  rotation, unlike {@link restore}). */
+  async currentUser(): Promise<AuthUser> {
+    return this.gateway.fetchCurrentUser();
+  }
+
   getAccessToken(): string | null {
     return this.tokens.get();
   }

@@ -10,8 +10,8 @@ import { useTabParam } from './useTabParam';
 
 const KEYS = ['one', 'two'] as const;
 
-function Probe() {
-  const [tab, setTab] = useTabParam<(typeof KEYS)[number]>(KEYS, 'one');
+function Probe({ paramName }: { paramName?: string } = {}) {
+  const [tab, setTab] = useTabParam<(typeof KEYS)[number]>(KEYS, 'one', paramName);
   const { search } = useLocation();
   return (
     <div>
@@ -24,10 +24,10 @@ function Probe() {
   );
 }
 
-function renderAt(entry: string) {
+function renderAt(entry: string, paramName?: string) {
   render(
     <MemoryRouter initialEntries={[entry]}>
-      <Probe />
+      <Probe paramName={paramName} />
     </MemoryRouter>,
   );
 }
@@ -68,5 +68,18 @@ describe('useTabParam', () => {
     await user.click(screen.getByRole('button', { name: 'go two' }));
 
     expect(screen.getByText('search: ?page=3&tab=two')).toBeDefined();
+  });
+
+  it('reads and writes a custom param so a nested tabset does not collide', async () => {
+    // The level hub nests the catalogue's tabs under `?cat=` while keeping its
+    // own on `?tab=`; both must coexist in one URL.
+    renderAt('/x?tab=one&cat=two', 'cat');
+    const user = userEvent.setup();
+
+    expect(screen.getByText('active: two')).toBeDefined();
+
+    await user.click(screen.getByRole('button', { name: 'go two' }));
+
+    expect(screen.getByText('search: ?tab=one&cat=two')).toBeDefined();
   });
 });

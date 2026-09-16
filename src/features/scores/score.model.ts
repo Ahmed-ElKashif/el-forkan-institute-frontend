@@ -5,8 +5,10 @@
 export interface Exam {
   id: string;
   subjectNameAr: string;
+  levelId: number;
   examType: string;
   gender: string | null;
+  scheduledAt: string | null;
   isLocked: boolean;
   maxScore: number;
   passScore: number;

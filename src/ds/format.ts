@@ -55,3 +55,19 @@ const hijri = new Intl.DateTimeFormat('ar-EG-u-ca-islamic-umalqura-nu-arab', {
 export function formatHijriDate(date: Date = new Date()): string {
   return hijri.format(date);
 }
+
+/* ---------------------------------------------------------------------------
+   Class-day date.
+
+   A class day is a specific Gregorian date the head teacher schedules (nearly
+   always a Friday). It is shown as weekday + day + month in Arabic with Latin
+   digits — the institute reads "الجمعة ١٤ سبتمبر" as a working day, not as the
+   Hijri header does. Takes a plain `YYYY-MM-DD`.
+--------------------------------------------------------------------------- */
+
+const classDay = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
+
+/** A class-day / exam-day date, e.g. «الجمعة ١٤ سبتمبر» (Latin digits). */
+export function formatClassDate(isoDate: string): string {
+  return classDay.format(new Date(`${isoDate}T00:00:00`));
+}

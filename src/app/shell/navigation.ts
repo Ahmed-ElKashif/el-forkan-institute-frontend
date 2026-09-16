@@ -13,6 +13,9 @@ export interface NavDestination {
   /** Filtered out of a teacher's sidebar, and its route gated here as well as
    *  server-side. 54 of the API's 115 routes are head-teacher-only. */
   headTeacherOnly?: boolean;
+  /** Kept out of the sidebar rail but still a titled, routable destination —
+   *  reached from elsewhere (the profile, opened from the user menu). */
+  hidden?: boolean;
   /** The build phase that replaces this destination's placeholder with the
    *  real screen. Shown, honestly, on the placeholder. */
   phase: string;
@@ -32,16 +35,17 @@ export const DESTINATIONS: NavDestination[] = [
   // first appearance here).
   { key: 'attendance', path: '/attendance', labelKey: 'nav.attendance', groupKey: 'nav.groups.teaching', icon: 'clipboard-check', phase: 'F2' },
   { key: 'scores', path: '/scores', labelKey: 'nav.scores', groupKey: 'nav.groups.teaching', icon: 'clipboard-list', phase: 'F3' },
-  { key: 'sections', path: '/sections', labelKey: 'nav.sections', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
+  // The level hub (six levels, boys/girls filtered inside) replaces the old
+  // twelve-row section list. `/levels/:id` is open so a teacher can reach a
+  // level's attendance/scores; the hub listing itself is head-teacher work.
+  { key: 'levels', path: '/levels', labelKey: 'nav.levels', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
   { key: 'users', path: '/users', labelKey: 'nav.users', groupKey: 'nav.groups.administration', icon: 'user', headTeacherOnly: true, phase: 'F6' },
-  { key: 'catalogue', path: '/catalogue', labelKey: 'nav.catalogue', groupKey: 'nav.groups.administration', icon: 'book-open', headTeacherOnly: true, phase: 'F6' },
-  // No `curriculum` destination: the curriculum is assembled out of the levels,
-  // subjects and books on the catalogue screen, so it is a tab there
-  // (`/catalogue?tab=curriculum`). `/curriculum` redirects into that tab.
-  // No `timetable` destination: a class's weekly grid is a tab on that class
-  // (`/sections/:id?tab=timetable`), so a separate entry would have asked the
-  // head teacher to pick the same class twice. `/timetable/:id` still resolves —
-  // App.tsx redirects it into the tab.
+  // No `catalogue`, `curriculum`, `sections` or `timetable` destination: a level
+  // owns both gendered classes, its own syllabus and its own schedule, so its
+  // roster, catalogue (curriculum + subjects + books), class days, attendance
+  // and scores are all tabs on the level hub. The retired `/catalogue`,
+  // `/curriculum`, `/sections`, `/sections/:id` and `/timetable*` links redirect
+  // to `/levels` (App.tsx).
   { key: 'whatsapp', path: '/whatsapp', labelKey: 'nav.whatsapp', groupKey: 'nav.groups.administration', icon: 'message-circle', headTeacherOnly: true, phase: 'F6' },
   // One entry for both directions of the same workbook; `/exports` redirects
   // into this screen's export tab.
@@ -50,6 +54,10 @@ export const DESTINATIONS: NavDestination[] = [
   { key: 'promotion', path: '/promotion', labelKey: 'nav.promotion', groupKey: 'nav.groups.administration', icon: 'rotate-ccw', headTeacherOnly: true, phase: 'F6' },
   { key: 'audit', path: '/audit', labelKey: 'nav.audit', groupKey: 'nav.groups.administration', icon: 'history', headTeacherOnly: true, phase: 'F6' },
   { key: 'settings', path: '/settings', labelKey: 'nav.settings', groupKey: 'nav.groups.administration', icon: 'settings', headTeacherOnly: true, phase: 'F6' },
+  // Reached from the top-bar user menu, not the sidebar: hidden from the rail but
+  // owns `/profile` and the page title. Open to both roles (each edits their own
+  // account; a teacher's details are read-only there).
+  { key: 'profile', path: '/profile', labelKey: 'nav.profile', groupKey: 'nav.groups.general', icon: 'user', hidden: true, phase: 'F6' },
 ];
 
 /** The destination that owns the current path.
