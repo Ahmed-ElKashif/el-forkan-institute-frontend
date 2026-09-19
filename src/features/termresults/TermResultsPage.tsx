@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   Alert,
   Badge,
@@ -102,6 +102,15 @@ export function TermResultsPage() {
 
   return (
     <section className="space-y-4">
+      {/* This screen used to be reachable only by typing its URL, so it had
+          nowhere to return to. It hangs off the term-close list now. */}
+      <Link
+        to="/term-close"
+        className="inline-flex items-center gap-1 text-sm text-ink-500 no-underline hover:text-ink-700"
+      >
+        <Icon name="chevron-right" size={16} mirror />
+        {t('termclose.backToTermClose')}
+      </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-ink-900">{t('termresults.title')}</h2>

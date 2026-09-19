@@ -40,8 +40,9 @@ export interface Subject {
 }
 
 /** `code` is set once (seeds and imports resolve against it) and never edited. */
+/** No `code`: the server names the subject, because nothing reads the name it
+ *  gives — the import matches on المرادفات (see `SubjectFormDialog`). */
 export interface CreateSubjectInput {
-  code: string;
   nameAr: string;
   shortNameAr?: string;
   nameEn?: string;

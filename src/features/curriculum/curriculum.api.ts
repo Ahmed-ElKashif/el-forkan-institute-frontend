@@ -14,7 +14,14 @@ import type {
    re-reads the tree — there is no local overlay to keep in sync. */
 const curriculumApi = api.injectEndpoints({
   endpoints: (build) => ({
-    curriculumTree: build.query<CurriculumTreeNode[], { yearId: number; levelId: number; termNumber: number }>({
+    /* `levelId` and `termNumber` are optional on the API: omitting them returns
+       the whole year's plan in one request, which is how "where is this subject
+       taught" and "which مقررات prescribe this book" are answered without a
+       query per level and term. */
+    curriculumTree: build.query<
+      CurriculumTreeNode[],
+      { yearId: number; levelId?: number; termNumber?: number }
+    >({
       query: ({ yearId, levelId, termNumber }) => ({
         path: `/academic-years/${yearId}/curriculum?${toQueryString({ levelId, termNumber })}`,
       }),

@@ -21,7 +21,7 @@ const ELIGIBLE = {
   id: 'a',
   enrollmentId: 'en1',
   studentName: 'أحمد سالم',
-  studentCode: '2026-0001',
+  
   isEligible: true,
   reasonCode: 'new',
   reasonNote: null,
@@ -33,7 +33,7 @@ const HELD_OUT = {
   id: 'b',
   enrollmentId: 'en2',
   studentName: 'محمود علي',
-  studentCode: '2026-0002',
+  
   isEligible: false,
   reasonCode: 'low_attendance',
 };

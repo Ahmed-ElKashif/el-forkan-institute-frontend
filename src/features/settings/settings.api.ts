@@ -1,5 +1,10 @@
 import { api } from '../../shared/api/api';
-import type { AttendancePolicy, AttendancePolicyInput } from './settings.model';
+import type {
+  AttendancePolicy,
+  AttendancePolicyInput,
+  ProgressionRule,
+  ProgressionRuleInput,
+} from './settings.model';
 
 const settingsApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -20,7 +25,32 @@ const settingsApi = api.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { yearId }) => [{ type: 'Settings', id: `att-${yearId}` }],
     }),
+
+    /* The promotion engine's rules. Defined here beside the attendance policies
+       because they are the same kind of per-year, per-level setting on the same
+       controller — the study-plan screen imports them rather than declaring the
+       endpoint a second time. */
+    progressionRules: build.query<ProgressionRule[], number>({
+      query: (yearId) => ({ path: `/academic-years/${yearId}/progression-rules` }),
+      providesTags: (_result, _error, yearId) => [{ type: 'Settings', id: `prog-${yearId}` }],
+    }),
+    upsertProgressionRule: build.mutation<
+      ProgressionRule,
+      { yearId: number; body: ProgressionRuleInput }
+    >({
+      query: ({ yearId, body }) => ({
+        method: 'PUT',
+        path: `/academic-years/${yearId}/progression-rules`,
+        body,
+      }),
+      invalidatesTags: (_result, _error, { yearId }) => [{ type: 'Settings', id: `prog-${yearId}` }],
+    }),
   }),
 });
 
-export const { useAttendancePoliciesQuery, useUpsertAttendancePolicyMutation } = settingsApi;
+export const {
+  useAttendancePoliciesQuery,
+  useUpsertAttendancePolicyMutation,
+  useProgressionRulesQuery,
+  useUpsertProgressionRuleMutation,
+} = settingsApi;

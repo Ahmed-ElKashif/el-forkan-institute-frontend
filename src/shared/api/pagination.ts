@@ -12,6 +12,13 @@ export interface Page<T> {
  *  constantly. One place so a screen and its tests cannot pick different sizes. */
 export const DEFAULT_PAGE_SIZE = 25;
 
+/** The API's hard ceiling (`MAX_PAGE_SIZE` in src/common/pagination.ts). Asking
+ *  for more is a 400, not a truncated page — and a rejected reference read looks
+ *  exactly like an empty one on screen, which is how the markaz list stayed blank
+ *  while the rows were sitting in the database. Use this for "one generous page"
+ *  reads rather than picking a number. */
+export const MAX_PAGE_SIZE = 100;
+
 /** How many pages a total spans — at least one, so an empty list still renders
  *  a single (empty) page rather than zero. */
 export function pageCount(total: number, pageSize: number): number {

@@ -1,4 +1,4 @@
-export { CurriculumPage } from './CurriculumPage';
+export { CurriculumPage, type PlanScope } from './CurriculumPage';
 // The exam-creation dialog reads examinable rows to pick the subject an exam
 // belongs to (an exam points at a curriculum row, §4.2).
 export { useCurriculumTreeQuery } from './curriculum.api';

@@ -53,17 +53,37 @@ export interface CreateCurriculumInput {
   parentCurriculumId: number | null;
   isExaminable: boolean;
   isMandatory: boolean;
-  gradingMode: GradingMode;
-  assessmentType: AssessmentType;
-  maxScore: number;
-  passScore: number;
-  weight: number;
   teachingOrder: number | null;
+  /* The exam side of a مادة. Optional because a container has none — its exam,
+     mark and weight belong to its فروع — and the API defaults every one of them,
+     so leaving them out is how "this row is not examined" is said, rather than
+     storing marks no exam will ever read. */
+  gradingMode?: GradingMode;
+  assessmentType?: AssessmentType;
+  maxScore?: number;
+  passScore?: number;
+  weight?: number;
 }
 
 /** subjectId and termNumber are the row's identity (year+level+term+subject is
  *  the DDL's UNIQUE), so changing either is a delete-plus-create, not an edit. */
 export type UpdateCurriculumInput = Partial<Omit<CreateCurriculumInput, 'subjectId' | 'termNumber'>>;
+
+/** Every مادة in a plan, parents and فروع alike — a فرع carries its own books and
+ *  its own exam, so anything counting or listing "the subjects here" wants both.
+ *  Nesting is capped at two levels, so this never recurses. */
+export function allSubjects(tree: CurriculumTreeNode[]): CurriculumRow[] {
+  return tree.flatMap((node) => [node, ...node.children]);
+}
+
+/** Where a newly prescribed book sits among a مادة's existing ones.
+ *
+ *  `curriculum_units` is UNIQUE on (curriculum_id, sort_order), so this is a
+ *  constraint being satisfied, not a preference — which is exactly why the head
+ *  teacher should not be the one typing the number. */
+export function nextSortOrderFor(units: CurriculumUnit[]): number {
+  return units.reduce((top, unit) => Math.max(top, unit.sortOrder), 0) + 1;
+}
 
 export interface CurriculumUnitInput {
   bookId: number | null;

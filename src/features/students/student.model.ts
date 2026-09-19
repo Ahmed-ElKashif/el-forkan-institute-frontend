@@ -33,6 +33,8 @@ export interface StudentsQuery {
   levelId?: number;
   /** 'male' | 'female' — the men's/women's group filter; absent = both. */
   gender?: string;
+  /** Lifecycle status filter; absent = every status. */
+  status?: string;
 }
 
 /** The full student record behind the profile page — the fields `GET
@@ -42,7 +44,6 @@ export interface StudentsQuery {
  *  enrollment); the profile reads the study year from the newest enrollment. */
 export interface StudentDetail {
   id: string;
-  studentCode: string;
   fullName: string;
   gender: string;
   branchId: number | null;
@@ -56,6 +57,23 @@ export interface StudentDetail {
   status: string;
   whatsappOptIn: boolean;
   notes: string | null;
+}
+
+/** The body of `POST /students` for a manual registration. Gender and branch are
+ *  fixed by the class the student is being added to (a roster is gendered). */
+export interface CreateStudentInput {
+  fullName: string;
+  gender: 'male' | 'female';
+  branchId: number | null;
+  phone?: string | null;
+  whatsappPhone?: string | null;
+  birthDate?: string | null;
+  governorateId?: number | null;
+  markazId?: number | null;
+  address?: string | null;
+  nationalId?: string | null;
+  notes?: string | null;
+  whatsappOptIn?: boolean;
 }
 
 /** The editable fields of a student record — the body of `PATCH /students/:id`.

@@ -31,8 +31,7 @@ const HEAD: AuthUser = {
 
 const STUDENT = {
   id: 's1',
-  studentCode: '2026-0007',
-  fullName: 'أحمد سالم عبد الله',
+    fullName: 'أحمد سالم عبد الله',
   gender: 'male',
   branchId: 1,
   phone: '+201000000001',
@@ -79,7 +78,7 @@ const PROFILE_ROUTES: StubRoutes = {
   'GET /governorates?page=1&pageSize=100': { items: [], total: 0, page: 1, pageSize: 100 },
   // The header resolves the study year against the current year (id 5, matching
   // the enrollment stub above).
-  'GET /academic-years?page=1&pageSize=1': { items: [{ id: 5, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+  'GET /academic-years?page=1&pageSize=100': { items: [{ id: 5, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
 };
 
 /** A working refresh + /users/me, so `AuthProvider.restore()` lands on `user`. */
@@ -178,7 +177,7 @@ describe('StudentProfilePage', () => {
       ...PROFILE_ROUTES,
       // No enrollment → the header shows the "assign year" button (legacy case).
       'GET /students/s1/enrollments': [],
-      'GET /academic-years?page=1&pageSize=1': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+      'GET /academic-years?page=1&pageSize=100': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
       'GET /levels': [{ id: 1, code: 'L1', nameAr: 'المستوى الأول', sortOrder: 2, isOptional: false, isTerminal: false, allowsCarry: true, grantsCertificate: true, requiresCleanEntry: false }],
       [sectionsKey]: { items: [{ id: 'sec1', name: 'قسم أ', gender: 'male', levelId: 1, defaultMode: 'onsite', enrolledCount: 0, capacity: null, teachers: [] }], total: 1, page: 1, pageSize: 100 },
       'POST /enrollments': { id: 'en1' },

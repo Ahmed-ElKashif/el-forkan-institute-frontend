@@ -1,5 +1,5 @@
 import { api } from './api';
-import { toQueryString, type Page } from './pagination';
+import { MAX_PAGE_SIZE, toQueryString, type Page } from './pagination';
 
 /** A branch of the institute. Reference data; the import targeting form needs it
  *  when an institute-wide head teacher (no branch of their own) must choose one. */
@@ -24,18 +24,20 @@ export interface Markaz {
 
 const referenceApi = api.injectEndpoints({
   endpoints: (build) => ({
-    // Branches are few and change rarely, so one generous page covers the list.
+    // Reference lists are few and change rarely, so one full page covers them.
     branches: build.query<Page<Branch>, void>({
-      query: () => ({ path: `/branches?${toQueryString({ page: 1, pageSize: 100 })}` }),
+      query: () => ({ path: `/branches?${toQueryString({ page: 1, pageSize: MAX_PAGE_SIZE })}` }),
     }),
     governorates: build.query<Page<Governorate>, void>({
-      query: () => ({ path: `/governorates?${toQueryString({ page: 1, pageSize: 100 })}` }),
+      query: () => ({ path: `/governorates?${toQueryString({ page: 1, pageSize: MAX_PAGE_SIZE })}` }),
     }),
-    // Scoped to a governorate; the student form skips the read until one is
-    // chosen, so the markaz list is only ever fetched for the relevant one.
+    /* Scoped to a governorate; the student form skips the read until one is
+       chosen, so the markaz list is only ever fetched for the relevant one.
+       This asked for 200 and was refused by the API's 100 ceiling on every
+       call — a governorate's مراكز never loaded, however many existed. */
     markazes: build.query<Page<Markaz>, number>({
       query: (governorateId) => ({
-        path: `/markazes?${toQueryString({ page: 1, pageSize: 200, governorateId })}`,
+        path: `/markazes?${toQueryString({ page: 1, pageSize: MAX_PAGE_SIZE, governorateId })}`,
       }),
     }),
   }),

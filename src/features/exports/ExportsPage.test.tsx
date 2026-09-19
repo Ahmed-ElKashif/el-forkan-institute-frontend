@@ -25,7 +25,7 @@ const PREVIEW = {
 };
 
 const BASE: StubRoutes = {
-  'GET /academic-years?page=1&pageSize=1': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+  'GET /academic-years?page=1&pageSize=100': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
   'GET /levels': [],
   'GET /exports/roster?academicYearId=1': new Blob(['roster-bytes']),
 };

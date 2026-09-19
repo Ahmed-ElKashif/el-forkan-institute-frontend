@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,43 +9,57 @@ import type { Book, Level, Subject } from './catalogue.model';
 import { makeStore } from '../../shared/api/store';
 import { toQueryString, type Page } from '../../shared/api/pagination';
 import { stubHttpClient, type StubRoutes } from '../../test/stub-http-client';
+import { HttpError } from '../../shared/http/http.errors';
 import '../../shared/i18n';
 
-/* Proves the catalogue's tabs write correctly: a subject is created, a level's
-   flags are edited, and a book is created. Also that the curriculum builder is
-   reachable as a fourth tab — it is assembled out of the other three, so it
-   lives here rather than on a destination of its own. Real store and DataTable
-   against a stub. */
+/* The study plan's shell: one scope (العام · المستوى · الفصل) that every tab is
+   read against, with the plan itself as the front door rather than a lookup
+   table. The registries still write correctly behind it.
 
-const LEVEL: Level = { id: 1, code: 'L1', nameAr: 'المستوى الأول', sortOrder: 1, isOptional: false, isTerminal: false, allowsCarry: true, grantsCertificate: false, requiresCleanEntry: false };
-const SUBJECT: Subject = { id: 1, code: 'ARABIC', nameAr: 'اللغة العربية', shortNameAr: null, nameEn: null, isActive: true, aliases: [] };
+   The scope test is the point of the redesign: before it, each tab scoped
+   itself, so "the books of level 2, term 1" was not a question this screen could
+   be asked. */
+
+const LEVEL_1: Level = { id: 1, code: 'L1', nameAr: 'المستوى الأول', sortOrder: 1, isOptional: false, isTerminal: false, allowsCarry: true, grantsCertificate: false, requiresCleanEntry: false };
+const LEVEL_2: Level = { ...LEVEL_1, id: 2, code: 'L2', nameAr: 'المستوى الثاني', sortOrder: 2 };
+const SUBJECT: Subject = { id: 1, code: 'S001', nameAr: 'اللغة العربية', shortNameAr: null, nameEn: null, isActive: true, aliases: [] };
 const BOOK: Book = { id: 1, titleAr: 'النحو الواضح', authorAr: 'علي الجارم', notes: null, isActive: true };
 
-const subjectsKey = `GET /subjects?${toQueryString({ page: 1, pageSize: 25 })}`;
-const booksKey = `GET /books?${toQueryString({ page: 1, pageSize: 25 })}`;
+const yearsKey = `GET /academic-years?${toQueryString({ page: 1, pageSize: 100 })}`;
+const subjectsPageKey = `GET /subjects?${toQueryString({ page: 1, pageSize: 25 })}`;
+const booksPageKey = `GET /books?${toQueryString({ page: 1, pageSize: 25 })}`;
+const subjectOptionsKey = `GET /subjects?${toQueryString({ page: 1, pageSize: 100 })}`;
+const bookOptionsKey = `GET /books?${toQueryString({ page: 1, pageSize: 100 })}`;
+
+function treeKey(levelId: number, termNumber = 1) {
+  return `GET /academic-years/1/curriculum?${toQueryString({ levelId, termNumber })}`;
+}
+function examsKey(levelId: number) {
+  return `GET /exams?${toQueryString({ levelId, page: 1, pageSize: 100 })}`;
+}
 
 function page<T>(items: T[]): Page<T> {
   return { items, total: items.length, page: 1, pageSize: 25 };
 }
 
-/* The screen keeps its active tab in `?tab=`, so it needs a router even though
-   it declares no routes of its own. `entry` lets a test open a specific tab the
-   way the retired /curriculum redirect does. */
-function renderCatalogue(
-  routes: StubRoutes,
-  entry = '/catalogue',
-  props: { lockedLevelId?: number; tabParam?: string } = {},
-) {
+function renderCatalogue(routes: StubRoutes = {}, entry = '/catalogue') {
   const http = stubHttpClient({
-    [subjectsKey]: page([SUBJECT]),
-    'GET /levels': [LEVEL],
-    [booksKey]: page([BOOK]),
+    [yearsKey]: page([{ id: 1, hijriYear: 1447, startsOn: '2026-04-03', endsOn: '2027-01-23', status: 'active', terms: [] }]),
+    'GET /levels': [LEVEL_1, LEVEL_2],
+    [subjectsPageKey]: page([SUBJECT]),
+    [booksPageKey]: page([BOOK]),
+    [subjectOptionsKey]: page([SUBJECT]),
+    [bookOptionsKey]: page([BOOK]),
+    [treeKey(1)]: [],
+    [treeKey(2)]: [],
+    [examsKey(1)]: page([]),
+    [examsKey(2)]: page([]),
     ...routes,
   });
   render(
     <MemoryRouter initialEntries={[entry]}>
       <Provider store={makeStore(http)}>
-        <CataloguePage {...props} />
+        <CataloguePage />
       </Provider>
     </MemoryRouter>,
   );
@@ -54,26 +68,76 @@ function renderCatalogue(
 
 afterEach(cleanup);
 
-describe('CataloguePage', () => {
-  it('creates a subject', async () => {
+describe('CataloguePage — the study plan', () => {
+  it('opens on the plan, not on a lookup table', async () => {
+    renderCatalogue();
+    expect(await screen.findByRole('tab', { name: 'المقررات', selected: true })).toBeDefined();
+  });
+
+  it('reads every tab against one scope: changing the level re-reads the plan', async () => {
+    const http = renderCatalogue();
+    await screen.findByRole('tab', { name: 'المقررات', selected: true });
+    await waitFor(() => expect(http.countOf(treeKey(1))).toBe(1));
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'المستوى' }), '2');
+
+    await waitFor(() => expect(http.countOf(treeKey(2))).toBe(1));
+  });
+
+  it('creates a subject from the registry', async () => {
     const http = renderCatalogue({ 'POST /subjects': { ...SUBJECT, id: 2 } });
-    await screen.findByText('اللغة العربية'); // subjects tab is the default
+    await userEvent.click(await screen.findByRole('tab', { name: 'المواد' }));
+    await screen.findByText('اللغة العربية');
 
     await userEvent.click(screen.getByRole('button', { name: 'مادة جديدة' }));
-    await userEvent.type(screen.getByRole('textbox', { name: 'الرمز' }), 'MATH');
     await userEvent.type(screen.getByRole('textbox', { name: 'الاسم بالعربية' }), 'الرياضيات');
     await userEvent.click(screen.getByRole('button', { name: 'حفظ' }));
 
     await waitFor(() => expect(http.countOf('POST /subjects')).toBe(1));
     const create = http.calls.find((c) => c.method === 'POST' && c.path === '/subjects');
-    expect(create?.body).toMatchObject({ code: 'MATH', nameAr: 'الرياضيات' });
+    // No code is sent any more — nothing reads it, so the server names it.
+    expect(create?.body).toEqual({ nameAr: 'الرياضيات' });
+  });
+
+  it('deletes a subject that nothing has used', async () => {
+    const http = renderCatalogue({ 'DELETE /subjects/1': null });
+    await userEvent.click(await screen.findByRole('tab', { name: 'المواد' }));
+    await screen.findByText('اللغة العربية');
+
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'حذف المادة' }));
+    await userEvent.click(screen.getByRole('button', { name: 'حذف المادة' }));
+
+    await waitFor(() => expect(http.countOf('DELETE /subjects/1')).toBe(1));
+  });
+
+  it('explains, rather than just failing, when the subject is in use', async () => {
+    /* A taught subject is held by curriculum rows, sessions and carried
+       subjects (ON DELETE RESTRICT), so the API refuses with 409. The head
+       teacher needs to be told to deactivate it — not shown a failed action. */
+    const http = renderCatalogue({
+      'DELETE /subjects/1': () => {
+        throw new HttpError(409, { message: 'This subject is in use and cannot be deleted' });
+      },
+    });
+    await userEvent.click(await screen.findByRole('tab', { name: 'المواد' }));
+    await screen.findByText('اللغة العربية');
+
+    await userEvent.click(screen.getByRole('button', { name: 'إجراءات' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'حذف المادة' }));
+    await userEvent.click(screen.getByRole('button', { name: 'حذف المادة' }));
+
+    await waitFor(() => expect(http.countOf('DELETE /subjects/1')).toBe(1));
+    expect(await screen.findByText(/عطّلها بدلًا من ذلك/)).toBeDefined();
   });
 
   it("edits a level's flags", async () => {
-    const http = renderCatalogue({ 'PATCH /levels/1': { ...LEVEL, isOptional: true } });
-    await userEvent.click(screen.getByRole('tab', { name: 'المستويات' }));
-    // The whole row opens the editor now; the same action is in its 3-dots menu.
-    await userEvent.click(await screen.findByText('المستوى الأول'));
+    const http = renderCatalogue({ 'PATCH /levels/1': { ...LEVEL_1, isOptional: true } });
+    await userEvent.click(await screen.findByRole('tab', { name: 'المستويات والقواعد' }));
+    // Scoped to the table: the scope bar's level picker holds an <option> with
+    // the same text, and clicking that would open nothing.
+    const table = await screen.findByRole('table');
+    await userEvent.click(within(table).getByText('المستوى الأول'));
     await userEvent.click(screen.getByRole('switch', { name: 'اختياري' }));
     await userEvent.click(screen.getByRole('button', { name: 'حفظ' }));
 
@@ -82,9 +146,9 @@ describe('CataloguePage', () => {
     expect((patch?.body as { isOptional?: boolean } | undefined)?.isOptional).toBe(true);
   });
 
-  it('creates a book', async () => {
+  it('creates a book in the institute-wide registry', async () => {
     const http = renderCatalogue({ 'POST /books': { ...BOOK, id: 2 } });
-    await userEvent.click(screen.getByRole('tab', { name: 'الكتب' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'الكتب والمتون' }));
     await screen.findByText('النحو الواضح');
 
     await userEvent.click(screen.getByRole('button', { name: 'كتاب جديد' }));
@@ -96,36 +160,8 @@ describe('CataloguePage', () => {
     expect(create?.body).toMatchObject({ titleAr: 'التبيان' });
   });
 
-  it('drops the all-levels tab when embedded in a level, keeping its catalogue', async () => {
-    /* Inside a level the level is already chosen, so the embedded catalogue
-       shows only that level's curriculum and the subject/book registries it
-       draws from — never the all-levels list. */
-    renderCatalogue(
-      {
-        'GET /academic-years?page=1&pageSize=100': page([{ id: 1, hijriYear: 1447 }]),
-        'GET /academic-years/1/curriculum?levelId=1&termNumber=1': [],
-      },
-      '/catalogue',
-      { lockedLevelId: 1, tabParam: 'cat' },
-    );
-
-    expect(await screen.findByRole('tab', { name: 'المنهج' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'المواد' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'الكتب' })).toBeDefined();
-    expect(screen.queryByRole('tab', { name: 'المستويات' })).toBeNull();
-  });
-
-  it('opens the curriculum builder on the tab named in the URL', async () => {
-    /* This is where the retired /curriculum route redirects, so it has to work
-       on first paint rather than only after a click. */
-    renderCatalogue(
-      {
-        'GET /academic-years?page=1&pageSize=100': page([{ id: 1, hijriYear: 1447 }]),
-        'GET /academic-years/1/curriculum?levelId=1&termNumber=1': [],
-      },
-      '/catalogue?tab=curriculum',
-    );
-
-    expect(await screen.findByRole('tab', { name: 'المنهج', selected: true })).toBeDefined();
+  it('honours the tab named in the URL, so the retired /curriculum link still lands', async () => {
+    renderCatalogue({}, '/catalogue?tab=subjects');
+    expect(await screen.findByRole('tab', { name: 'المواد', selected: true })).toBeDefined();
   });
 });

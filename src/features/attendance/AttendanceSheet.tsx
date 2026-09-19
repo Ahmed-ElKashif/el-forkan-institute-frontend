@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
   AttendanceCell,
   ATTENDANCE_STATES,
   Badge,
-  Button,
+  CommitBar,
+  ConfirmDialog,
   DataTable,
   EmptyState,
   Field,
@@ -78,8 +79,19 @@ export function AttendanceTab({
   const terms = year.data?.terms ?? [];
   const dates = classDayDates(days.data?.items ?? []);
   const [chosen, setChosen] = useState<string | null>(null);
+  const [pendingMarks, setPendingMarks] = useState(0);
+  const [dayAwaitingConfirm, setDayAwaitingConfirm] = useState<string | null>(null);
   // Default to the most recent class day, which is the one being marked today.
   const date = chosen ?? dates[dates.length - 1] ?? null;
+
+  /* Switching day swaps the whole grid, and pending marks belong to the day's
+     own sessions — carrying them over would attach them to the wrong periods, so
+     the grid is rebuilt per day (`key`) and unsaved work is confirmed away
+     rather than discarded silently. */
+  function chooseDay(next: string) {
+    if (pendingMarks > 0) setDayAwaitingConfirm(next);
+    else setChosen(next);
+  }
 
   if (year.isLoading || days.isLoading) return <GridSkeleton />;
   if (dates.length === 0) {
@@ -100,12 +112,32 @@ export function AttendanceTab({
         <Select
           options={dates.map((d) => ({ value: d, label: formatClassDate(d) }))}
           value={date ?? ''}
-          onChange={(e) => setChosen(e.target.value)}
+          onChange={(e) => chooseDay(e.target.value)}
           aria-label={t('attendance.classDay')}
         />
       </Field>
       {date != null && term != null ? (
-        <Grid sectionId={sectionId} termId={term.id} date={date} />
+        <Grid
+          key={date}
+          sectionId={sectionId}
+          termId={term.id}
+          date={date}
+          onPendingChange={setPendingMarks}
+        />
+      ) : null}
+
+      {dayAwaitingConfirm != null ? (
+        <ConfirmDialog
+          title={t('attendance.unsaved.title')}
+          consequence={t('attendance.unsaved.consequence', { count: formatNumber(pendingMarks) })}
+          confirmLabel={t('attendance.unsaved.discard')}
+          tone="danger"
+          onConfirm={() => {
+            setChosen(dayAwaitingConfirm);
+            setDayAwaitingConfirm(null);
+          }}
+          onCancel={() => setDayAwaitingConfirm(null)}
+        />
       ) : null}
     </section>
   );
@@ -114,15 +146,31 @@ export function AttendanceTab({
 /** The interactive sheet. Server data is the base; `edits` overlays the
  *  teacher's pending taps, so a save that refetches the grid never discards work
  *  in other columns. */
-function Grid({ sectionId, termId, date }: { sectionId: string; termId: number; date?: string }) {
+function Grid({
+  sectionId,
+  termId,
+  date,
+  onPendingChange,
+}: {
+  sectionId: string;
+  termId: number;
+  date?: string;
+  onPendingChange: (count: number) => void;
+}) {
   const { t } = useTranslation();
   const grid = useAttendanceGridQuery({ sectionId, termId, date });
   const [save] = useSaveSessionAttendanceMutation();
 
   const [edits, setEdits] = useState<Record<string, AttendanceStatus>>({});
   const [warnings, setWarnings] = useState<Record<string, AbsenceWarning>>({});
-  const [savingSessionId, setSavingSessionId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ tone: 'success' | 'danger'; message: string; detail?: string } | null>(null);
+
+  // The day picker lives one level up and needs to know there is work to lose.
+  const pendingMarks = Object.keys(edits).length;
+  useEffect(() => {
+    onPendingChange(pendingMarks);
+  }, [pendingMarks, onPendingChange]);
 
   const gridData = grid.data;
   const sessions = gridData?.sessions ?? [];
@@ -145,37 +193,59 @@ function Grid({ sectionId, termId, date }: { sectionId: string; termId: number; 
     setEdits((prev) => ({ ...prev, [key]: nextStatus(statusOf(session, row)) }));
   }
 
-  async function saveColumn(session: AttendanceSession) {
-    const entries: AttendanceEntry[] = rows
+  /** Every student already marked in this period. A period is what the API
+   *  writes in one request, so this is the unit a save is built from. */
+  function markedEntries(session: AttendanceSession): AttendanceEntry[] {
+    return rows
       .map((row) => ({ enrollmentId: row.enrollmentId, status: statusOf(session, row) }))
       .filter((entry): entry is AttendanceEntry => entry.status !== null);
-    if (entries.length === 0) return;
+  }
 
-    setSavingSessionId(session.id);
-    try {
-      const result = await save({ sessionId: session.id, entries }).unwrap();
-      // The column is now server truth; drop its edits so the refetch (triggered
-      // by invalidation) is what the column reads, and it reads as saved.
-      setEdits((prev) => {
-        const next = { ...prev };
-        for (const row of rows) delete next[editKey(session.id, row.enrollmentId)];
-        return next;
-      });
-      setWarnings((prev) => {
-        const next = { ...prev };
-        for (const warning of result.warnings) next[warning.enrollmentId] = warning;
-        return next;
-      });
-      setToast({
-        tone: 'success',
-        message: t('attendance.saved'),
-        detail: t('attendance.savedDetail', { count: formatNumber(result.saved) }),
-      });
-    } catch {
-      setToast({ tone: 'danger', message: t('attendance.saveError') });
-    } finally {
-      setSavingSessionId(null);
+  /** Commits the whole sheet: one request per period the teacher touched.
+   *
+   *  A period that fails keeps its own edits, so a retry resends exactly the
+   *  work that did not land, and the failed periods are named — folding them
+   *  into one "save failed" would leave the teacher guessing which register is
+   *  still unrecorded. */
+  async function saveTouchedPeriods() {
+    const touched = sessions.filter((session) => dirtySessions.has(session.id));
+    setIsSaving(true);
+    const failedPeriods: string[] = [];
+    let savedCount = 0;
+
+    for (const session of touched) {
+      const entries = markedEntries(session);
+      if (entries.length === 0) continue;
+      try {
+        const outcome = await save({ sessionId: session.id, entries }).unwrap();
+        savedCount += outcome.saved;
+        // The period is now server truth; drop its edits so the refetch
+        // (triggered by invalidation) is what the column reads.
+        setEdits((prev) => {
+          const next = { ...prev };
+          for (const row of rows) delete next[editKey(session.id, row.enrollmentId)];
+          return next;
+        });
+        setWarnings((prev) => {
+          const next = { ...prev };
+          for (const warning of outcome.warnings) next[warning.enrollmentId] = warning;
+          return next;
+        });
+      } catch {
+        failedPeriods.push(session.subjectNameAr);
+      }
     }
+
+    setIsSaving(false);
+    setToast(
+      failedPeriods.length > 0
+        ? { tone: 'danger', message: t('attendance.savePartial', { periods: failedPeriods.join('، ') }) }
+        : {
+            tone: 'success',
+            message: t('attendance.saved'),
+            detail: t('attendance.savedDetail', { count: formatNumber(savedCount) }),
+          },
+    );
   }
 
   if (grid.isLoading && !gridData) return <GridSkeleton />;
@@ -202,13 +272,7 @@ function Grid({ sectionId, termId, date }: { sectionId: string; termId: number; 
       align: 'center',
       width: date != null ? 116 : 72,
       header: (
-        <ColumnHeader
-          session={session}
-          dateMode={date != null}
-          dirty={dirtySessions.has(session.id)}
-          saving={savingSessionId === session.id}
-          onSave={() => saveColumn(session)}
-        />
+        <ColumnHeader session={session} dateMode={date != null} dirty={dirtySessions.has(session.id)} />
       ),
       render: (row) => (
         <AttendanceCell status={statusOf(session, row)} onClick={() => cycle(session, row)} />
@@ -220,6 +284,23 @@ function Grid({ sectionId, termId, date }: { sectionId: string; termId: number; 
     <div className={grid.isFetching ? 'opacity-60 transition-opacity' : undefined} aria-busy={grid.isFetching}>
       <AttendanceLegend />
       <DataTable density="compact" columns={columns} rows={rows} getRowKey={(row) => row.enrollmentId} />
+
+      {/* One commit for the whole sheet, like the score grid: a teacher marks
+          across every period of the day and saves once, instead of hunting for
+          a button per column and leaving some of them unpressed. */}
+      {pendingMarks > 0 ? (
+        <CommitBar
+          counts={[
+            { label: t('attendance.commit.marks'), value: formatNumber(pendingMarks), tone: 'update' },
+            { label: t('attendance.commit.periods'), value: formatNumber(dirtySessions.size), tone: 'update' },
+          ]}
+          note={t('attendance.commit.note')}
+          confirmLabel={t('attendance.save')}
+          disabled={isSaving}
+          onConfirm={saveTouchedPeriods}
+        />
+      ) : null}
+
       {toast ? (
         <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
           <Toast tone={toast.tone} message={toast.message} detail={toast.detail} onDismiss={() => setToast(null)} />
@@ -235,7 +316,6 @@ function StudentCell({ row, warning }: { row: AttendanceGridRow; warning: Absenc
   return (
     <div className="flex flex-col gap-0.5">
       <span className="font-semibold text-ink-900">{row.studentName}</span>
-      <span className="ef-num text-xs text-ink-400">{row.studentCode}</span>
       {warning ? (
         // The threshold is only known once a save returns it, so this badge
         // appears after the column that crossed the limit is saved, not on load.
@@ -251,14 +331,10 @@ function ColumnHeader({
   session,
   dateMode,
   dirty,
-  saving,
-  onSave,
 }: {
   session: AttendanceSession;
   dateMode: boolean;
   dirty: boolean;
-  saving: boolean;
-  onSave: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -273,18 +349,9 @@ function ColumnHeader({
       ) : (
         <span className="ef-num">{session.sessionNo != null ? formatNumber(session.sessionNo) : '—'}</span>
       )}
-      <Button
-        variant="secondary"
-        size="sm"
-        icon="check"
-        loading={saving}
-        disabled={!dirty || saving}
-        onClick={onSave}
-        className="h-7 px-2"
-        aria-label={t('attendance.save')}
-      >
-        {t('attendance.save')}
-      </Button>
+      {/* Which periods the single commit will write — and, after a partial
+          failure, which ones still have not landed. */}
+      {dirty ? <Badge tone="info">{t('attendance.commit.unsaved')}</Badge> : null}
     </div>
   );
 }

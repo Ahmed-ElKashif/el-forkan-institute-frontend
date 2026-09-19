@@ -14,6 +14,10 @@ export interface Section {
   name: string;
   gender: string;
   levelId: number;
+  /** The section's branch — carried by the API's `SectionView`. The roster's
+   *  "add new student" flow needs it (a new student is created in the class's
+   *  branch), so it is modelled here even though the picker never shows it. */
+  branchId: number;
   defaultMode: string;
   enrolledCount: number;
   capacity: number | null;
@@ -73,8 +77,10 @@ export interface Enrollment {
   id: string;
   studentId: string;
   studentName: string;
-  studentCode: string;
   entryType: string;
   status: string;
   isHistorical: boolean;
+  /** Subjects this enrolment still owes from an earlier level (R13/R14), pending.
+   *  Drives the roster's "carries a subject from a previous level" badge. */
+  pendingCarryCount: number;
 }

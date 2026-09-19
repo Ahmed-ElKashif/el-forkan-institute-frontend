@@ -26,3 +26,37 @@ export interface AttendancePolicyInput {
   autoWarnEnabled: boolean;
   exceedingAction: ExceedingAction;
 }
+
+/* Progression rules (§4.3) — the only inputs the promotion engine reads besides
+   the results themselves. Shaped like the attendance policies above: a per-level
+   row, falling back to the year-wide row with `levelId: null`. When neither
+   exists the engine refuses to decide and blocks the enrolment, which is why
+   these need to be editable rather than seed-only.
+
+   `failureCountingUnit` exists on the API and is deliberately absent here: the
+   rules engine never reads it, so offering it would promise behaviour that does
+   not happen. */
+
+export interface ProgressionRule {
+  id: number;
+  academicYearId: number;
+  /** null = the year-wide rule that applies to every level without its own. */
+  levelId: number | null;
+  maxCarriedSubjects: number;
+  makeupRoundEnabled: boolean;
+  carryForwardEnabled: boolean;
+  mandatoryCanBeCarried: boolean;
+}
+
+/** The body of the upsert (PUT by year + level).
+ *
+ *  Every field is required because the API's schema is strict but **not**
+ *  partial: each key has a default, so anything omitted is silently reset rather
+ *  than left alone. Sending the whole rule is the only safe call. */
+export interface ProgressionRuleInput {
+  levelId: number | null;
+  maxCarriedSubjects: number;
+  makeupRoundEnabled: boolean;
+  carryForwardEnabled: boolean;
+  mandatoryCanBeCarried: boolean;
+}

@@ -54,7 +54,7 @@ const NO_SESSION: StubRoutes = {
   /* The signed-in landing page is the dashboard, which reads the current year
      then its summary. Stubbed so these auth/routing tests land on a rendered
      shell rather than a dashboard error state. */
-  'GET /academic-years?page=1&pageSize=1': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+  'GET /academic-years?page=1&pageSize=100': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
   'GET /reports/summary?academicYearId=1': {
     academicYearId: 1,
     hijriYear: 1447,
@@ -157,9 +157,10 @@ describe('App', () => {
     /* Landed inside the shell — the user-menu chip only exists there. */
     expect(await screen.findByRole('button', { name: /أحمد سالم/ })).toBeDefined();
 
-    /* Shared sections stay; the three head-teacher-only ones are gone entirely,
-       not rendered disabled. */
-    expect(screen.getByText('الطلاب')).toBeDefined();
+    /* Shared sections stay — Levels is now open to both (its roster is where a
+       teacher manages students); the three head-teacher-only ones are gone
+       entirely, not rendered disabled. */
+    expect(screen.getByText('المستويات')).toBeDefined();
     expect(screen.queryByText('الاستيراد')).toBeNull();
     expect(screen.queryByText('الشهادات')).toBeNull();
     expect(screen.queryByText('سجل المراجعة')).toBeNull();
@@ -191,12 +192,12 @@ describe('App', () => {
     await waitFor(() => expect(window.location.pathname).toBe('/levels'));
   });
 
-  /* The catalogue and curriculum moved into the level hub, and export is the
-     import's other direction. Existing links must land where they now live.
+  /* The curriculum is a tab of the catalogue it is assembled from, and export is
+     the import's other direction. Existing links must land where they now live.
 
      One render each — the router reads the URL when it mounts, so a pushState
      between assertions would not navigate. */
-  it('sends a retired /curriculum link to the level hub', async () => {
+  it('sends a retired /curriculum link to the catalogue’s curriculum tab', async () => {
     window.history.pushState({}, '', '/curriculum');
     const { auth, http } = containerWith();
     render(<App container={{ auth, http }} />);
@@ -204,7 +205,8 @@ describe('App', () => {
     await signInAs(USER);
     await screen.findByRole('button', { name: /محمود عبد الله/ });
 
-    await waitFor(() => expect(window.location.pathname).toBe('/levels'));
+    await waitFor(() => expect(window.location.pathname).toBe('/catalogue'));
+    expect(window.location.search).toBe('?tab=curriculum');
   });
 
   it('sends a retired /exports link into the import screen’s export tab', async () => {

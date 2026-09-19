@@ -14,7 +14,6 @@ export interface AttendanceCellData {
 export interface AttendanceGridRow {
   enrollmentId: string;
   studentName: string;
-  studentCode: string;
   cells: AttendanceCellData[];
   absenceCount: number;
 }

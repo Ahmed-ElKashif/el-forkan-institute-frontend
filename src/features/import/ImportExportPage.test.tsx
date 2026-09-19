@@ -32,7 +32,7 @@ const BASE: StubRoutes = {
   'GET /auth/refresh/csrf-token': { csrfToken: 'x' },
   'POST /auth/refresh': { accessToken: 'a' },
   'GET /users/me': HEAD,
-  'GET /academic-years?page=1&pageSize=1': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+  'GET /academic-years?page=1&pageSize=100': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
   'GET /levels': [],
   'GET /sections?academicYearId=1&page=1&pageSize=100&branchId=1': {
     items: [],

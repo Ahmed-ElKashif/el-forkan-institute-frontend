@@ -78,7 +78,6 @@ export function EligibilityPage() {
 
   const columns: Column<EligibilityRow>[] = [
     { key: 'name', header: t('eligibility.columns.name'), sticky: true, render: (row) => row.studentName },
-    { key: 'code', header: t('eligibility.columns.code'), numeric: true, render: (row) => row.studentCode },
     {
       key: 'status',
       header: t('eligibility.columns.status'),

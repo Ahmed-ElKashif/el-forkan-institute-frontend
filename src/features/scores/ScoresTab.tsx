@@ -19,7 +19,7 @@ import { useAcademicYearQuery, defaultTerm } from '../../shared/api/calendar';
 import type { SectionDetail } from '../sections';
 import { ExamCreateDialog } from './ExamCreateDialog';
 import { useListExamsQuery } from './scores.api';
-import type { Exam } from './score.model';
+import { examsForCohort, type Exam } from './score.model';
 
 function examDate(exam: Exam): string | null {
   return exam.scheduledAt?.slice(0, 10) ?? null;
@@ -48,10 +48,7 @@ export function ScoresTab({
   if (exams.isLoading || year.isLoading) return <TableSkeleton />;
   if (exams.isError || year.isError) return <Alert tone="danger" title={t('scores.error')} />;
 
-  // Exams belong to level+term+gender; a null gender is a shared sitting (R3).
-  const forGender = (exams.data?.items ?? []).filter(
-    (e) => e.gender === null || e.gender === section.gender,
-  );
+  const forGender = examsForCohort(exams.data?.items ?? [], section.levelId, section.gender);
   const dates = [...new Set(forGender.map(examDate).filter((d): d is string => d != null))].sort();
   const undated = forGender.filter((e) => examDate(e) === null);
   const date = chosen ?? dates[dates.length - 1] ?? null;

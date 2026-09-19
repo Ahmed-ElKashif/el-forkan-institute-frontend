@@ -6,16 +6,18 @@ import { DiProvider } from '../shared/di/DiProvider';
 import { makeStore } from '../shared/api/store';
 import { AuthProvider, LoginPage, ResetPasswordPage, ProtectedRoute, RequireRole, FirstLoginWelcome } from '../features/auth';
 import { DashboardPage } from '../features/dashboard';
-import { StudentsPage, StudentProfilePage } from '../features/students';
-import { LevelsPage, LevelDetailPage } from '../features/levels';
-import { ScoreGridPage } from '../features/scores';
+import { StudentProfilePage } from '../features/students';
+import { LevelsPage, LevelDetailPage, LevelAttendancePage } from '../features/levels';
+import { OpenExamsPage, ScoreGridPage } from '../features/scores';
 import { EligibilityPage, EligibilityPrintPage } from '../features/eligibility';
-import { TermResultsPage } from '../features/termresults';
+import { TermClosePage, TermResultsPage } from '../features/termresults';
+import { CataloguePage } from '../features/catalogue';
+import { PromotionPage } from '../features/promotion';
 import { ImportExportPage } from '../features/import';
 import { CertificatesPage, CertificatePrintPage } from '../features/certificates';
-import { PromotionPage } from '../features/promotion';
 import { AuditPage } from '../features/audit';
 import { UsersPage } from '../features/users';
+import { AcademicYearsPage } from '../features/calendar';
 import { WhatsAppPage } from '../features/whatsapp';
 import { ProfilePage } from '../features/profile';
 import { SettingsPage } from '../features/settings';
@@ -30,19 +32,24 @@ import '../shared/i18n';
    the single source of paths and gating. */
 const BUILT_SCREENS: Record<string, ReactNode> = {
   dashboard: <DashboardPage />,
-  students: <StudentsPage />,
   levels: <LevelsPage />,
-  /* Attendance and scores are done inside a level: each nav destination is the
-     level picker, and a row opens that level straight onto its attendance or
-     scores tab (`/levels/:id?tab=…`). The teacher filters boys/girls there. */
+  /* The two daily tasks open on what is actually outstanding, and they differ
+     because their unit of work differs. Attendance is marked per class per day,
+     so its nav is the cohort picker and a row opens that class's sheet. Marks
+     belong to an *exam*, not to a class, so the Scores nav lists the exams still
+     awaiting them and a row opens its grid — the level, cohort and exam day the
+     teacher used to pick through were never really choices. */
   attendance: <LevelsPage linkTab="attendance" />,
-  scores: <LevelsPage linkTab="scores" />,
+  scores: <OpenExamsPage />,
   /* Head-teacher-only; gated in the route table via the registry's flag. */
+  catalogue: <CataloguePage />,
+  termClose: <TermClosePage />,
+  promotion: <PromotionPage />,
   imports: <ImportExportPage />,
   certificates: <CertificatesPage />,
-  promotion: <PromotionPage />,
   audit: <AuditPage />,
   users: <UsersPage />,
+  academicYears: <AcademicYearsPage />,
   whatsapp: <WhatsAppPage />,
   settings: <SettingsPage />,
   profile: <ProfilePage />,
@@ -96,6 +103,10 @@ export function App({ container }: { container: AppContainer }) {
                 {openDestinations.map((d) => (
                   <Route key={d.key} path={d.path} element={screenFor(d.key)} />
                 ))}
+                {/* The standalone students list folded into the level rosters
+                    (add/edit/withdraw + search live there). The retired list
+                    redirects to the level hub; both roles may follow it. */}
+                <Route path="/students" element={<Navigate to="/levels" replace />} />
                 {/* A student's profile, reached from a roster row. Both roles
                     may open one they can reach; branch visibility is enforced in
                     the service, as it is for the roster itself. */}
@@ -105,8 +116,19 @@ export function App({ container }: { container: AppContainer }) {
                     tabs (catalogue, class days, teachers) are gated inside the
                     screen by role, not at the route. */}
                 <Route path="/levels/:levelId" element={<LevelDetailPage />} />
-                {/* The score grid, reached from a level's scores tab. Both roles
-                    enter; score lock and correction are gated inside the screen. */}
+                {/* The teacher's daily task flows: the Attendance and Scores nav
+                    entries are level pickers, and a row opens the level's own
+                    attendance/scores here — staying on the task route instead of
+                    bouncing into the level hub. Both roles enter. */}
+                <Route path="/attendance/:levelId" element={<LevelAttendancePage />} />
+                {/* Retired: a level's exam list is the hub's scores tab, and the
+                    Scores nav now opens the exams awaiting marks, so this route
+                    duplicated both and was reachable from neither. */}
+                <Route path="/scores/:levelId" element={<Navigate to="/levels" replace />} />
+                {/* The score grid, reached from the Scores nav or a level's
+                    scores tab. Both roles enter; score lock and correction are
+                    gated inside the screen. The static `exams` segment outranks
+                    `/scores/:levelId`. */}
                 <Route path="/scores/exams/:examId" element={<ScoreGridPage />} />
                 {/* An exam's eligible-students list, reached from the exam
                     picker; both roles compute, view and print it. */}
@@ -126,11 +148,11 @@ export function App({ container }: { container: AppContainer }) {
                   <Route path="/sections/:id" element={<Navigate to="/levels" replace />} />
                   <Route path="/timetable" element={<Navigate to="/levels" replace />} />
                   <Route path="/timetable/:sectionId" element={<Navigate to="/levels" replace />} />
-                  {/* The catalogue and curriculum moved inside the level hub (a
-                      level's own المنهج والمواد tab); export is the import's other
-                      direction. All redirect to where they now live. */}
-                  <Route path="/catalogue" element={<Navigate to="/levels" replace />} />
-                  <Route path="/curriculum" element={<Navigate to="/levels" replace />} />
+                  {/* The curriculum is a tab of the catalogue it is built from;
+                      export is the import's other direction. Both redirect to
+                      where they now live. (`/catalogue` is a destination again —
+                      the registry routes it above.) */}
+                  <Route path="/curriculum" element={<Navigate to="/catalogue?tab=curriculum" replace />} />
                   <Route path="/exports" element={<Navigate to="/imports?tab=export" replace />} />
                 </Route>
               </Route>

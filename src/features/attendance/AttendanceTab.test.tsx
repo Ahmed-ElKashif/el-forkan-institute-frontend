@@ -26,7 +26,7 @@ const SESSIONS = {
 const GRID = {
   sectionId: 'sec1',
   sessions: [{ id: 'sess1', sessionNo: 1, sessionDate: '2026-09-18', startsAt: '16:00', subjectNameAr: 'القرآن', sheikhName: 'الشيخ', mode: 'onsite', status: 'scheduled' }],
-  rows: [{ enrollmentId: 'e1', studentName: 'أحمد سالم', studentCode: '2026-1', cells: [{ sessionId: 'sess1', status: null }], absenceCount: 0 }],
+  rows: [{ enrollmentId: 'e1', studentName: 'أحمد سالم', cells: [{ sessionId: 'sess1', status: null }], absenceCount: 0 }],
 };
 
 const sessionsKey = `GET /sessions?${toQueryString({ sectionId: 'sec1', page: 1, pageSize: DEFAULT_PAGE_SIZE })}`;
@@ -75,5 +75,45 @@ describe('AttendanceTab — date-first', () => {
     await waitFor(() => expect(http.countOf('POST /sessions/sess1/attendance')).toBe(1));
     const save = http.calls.find((c) => c.method === 'POST' && c.path === '/sessions/sess1/attendance');
     expect(save?.body).toEqual({ entries: [{ enrollmentId: 'e1', status: 'present' }] });
+  });
+});
+
+/* A class day runs several periods, and the teacher marks across all of them
+   before saving once. The commit must reach every period that was touched — a
+   loop that stops at the first one would silently drop the rest of the day. */
+
+const PERIOD_2 = { id: 'sess2', sessionNo: 2, sessionDate: '2026-09-18', startsAt: '17:00', subjectNameAr: 'البلاغة', sheikhName: 'الشيخ', mode: 'onsite', status: 'scheduled' };
+
+const TWO_PERIOD_ROUTES: StubRoutes = {
+  'GET /academic-years/10': YEAR,
+  [sessionsKey]: { ...SESSIONS, items: [...SESSIONS.items, { ...PERIOD_2, endsAt: '18:00', room: null, meetingUrl: null, cancelReason: null }], total: 2 },
+  [gridKey]: {
+    ...GRID,
+    sessions: [...GRID.sessions, PERIOD_2],
+    rows: [{ ...GRID.rows[0], cells: [{ sessionId: 'sess1', status: null }, { sessionId: 'sess2', status: null }] }],
+  },
+  'POST /sessions/sess1/attendance': { saved: 1, warnings: [] },
+  'POST /sessions/sess2/attendance': { saved: 1, warnings: [] },
+};
+
+describe('AttendanceTab — one commit for the whole day', () => {
+  it('writes every period the teacher touched, not just the first', async () => {
+    const http = stubHttpClient(TWO_PERIOD_ROUTES);
+    render(
+      <Provider store={makeStore(http)}>
+        <AttendanceTab sectionId="sec1" academicYearId={10} />
+      </Provider>,
+    );
+    const user = userEvent.setup();
+
+    await screen.findByText('أحمد سالم');
+    for (const cell of screen.getAllByRole('button', { name: 'غير مسجَّل' })) {
+      await user.click(cell);
+    }
+
+    await user.click(screen.getByRole('button', { name: 'حفظ' }));
+
+    await waitFor(() => expect(http.countOf('POST /sessions/sess1/attendance')).toBe(1));
+    expect(http.countOf('POST /sessions/sess2/attendance')).toBe(1);
   });
 });
