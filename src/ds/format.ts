@@ -59,15 +59,47 @@ export function formatHijriDate(date: Date = new Date()): string {
 /* ---------------------------------------------------------------------------
    Class-day date.
 
-   A class day is a specific Gregorian date the head teacher schedules (nearly
-   always a Friday). It is shown as weekday + day + month in Arabic with Latin
-   digits — the institute reads "الجمعة ١٤ سبتمبر" as a working day, not as the
-   Hijri header does. Takes a plain `YYYY-MM-DD`.
+   A class day is a specific day the head teacher schedules (nearly always a
+   Friday). It is *picked* in Hijri, so it is read back in Hijri — showing
+   «الجمعة ١٤ سبتمبر» under a control that offered ربيع الأول would be two
+   different calendars for one day. Weekday + day + month, no year: the year is
+   already on the screen around it. Takes a plain Gregorian `YYYY-MM-DD`, which
+   is what the API stores and returns.
 --------------------------------------------------------------------------- */
 
-const classDay = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
+const classDay = new Intl.DateTimeFormat('ar-EG-u-ca-islamic-umalqura-nu-arab', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 
-/** A class-day / exam-day date, e.g. «الجمعة ١٤ سبتمبر» (Latin digits). */
+/** A class-day / exam-day date in Hijri, e.g. «الجمعة ٢١ ربيع الأول». */
 export function formatClassDate(isoDate: string): string {
-  return classDay.format(new Date(`${isoDate}T00:00:00`));
+  return classDay.format(parseIsoDate(isoDate));
+}
+
+/* ---------------------------------------------------------------------------
+   Gregorian date.
+
+   The one calendar that stays Gregorian is a date of birth: national IDs and
+   every official document a student brings carry a Gregorian one, so showing
+   it in Hijri would mean staff converting by hand to check a passport against
+   the record. Latin digits, to match the rest of the numerals.
+--------------------------------------------------------------------------- */
+
+const gregorianDay = new Intl.DateTimeFormat(LOCALE, {
+  year: 'numeric',
+  day: 'numeric',
+  month: 'long',
+});
+
+/** A Gregorian calendar date, e.g. «14 سبتمبر 2009» — birth dates. */
+export function formatGregorianDate(isoDate: string): string {
+  return gregorianDay.format(parseIsoDate(isoDate));
+}
+
+/** `YYYY-MM-DD` as a LOCAL-midnight Date. `new Date(iso)` would parse it as
+ *  UTC and render the previous day west of Greenwich. */
+function parseIsoDate(isoDate: string): Date {
+  return new Date(`${isoDate}T00:00:00`);
 }

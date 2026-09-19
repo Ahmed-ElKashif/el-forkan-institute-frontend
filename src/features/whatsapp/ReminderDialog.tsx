@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Dialog, Field, Input, Select, type SelectOption } from '../../ds';
+import { Alert, Button, DatePicker, Dialog, Field, Select, type SelectOption } from '../../ds';
 import { useCurrentAcademicYearQuery } from '../../shared/api/calendar';
 import { useListSectionsQuery } from '../sections';
 import { useQueueReminderMutation } from './whatsapp.api';
@@ -60,7 +60,7 @@ export function ReminderDialog({ onClose, onQueued }: { onClose: () => void; onQ
               <Select options={sectionOptions} placeholder={t('whatsapp.reminder.sectionPlaceholder')} value={sectionId ?? ''} onChange={(e) => setSectionId(e.target.value === '' ? null : e.target.value)} aria-label={t('whatsapp.reminder.section')} />
             </Field>
             <Field label={t('whatsapp.reminder.date')} required hint={t('whatsapp.reminder.dateHint')}>
-              <Input type="date" className="ef-num" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} aria-label={t('whatsapp.reminder.date')} />
+              <DatePicker value={targetDate} onChange={setTargetDate} aria-label={t('whatsapp.reminder.date')} />
             </Field>
           </>
         )}

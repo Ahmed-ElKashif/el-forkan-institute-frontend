@@ -8,6 +8,7 @@ import {
   DataTable,
   Tabs,
   Toast,
+  formatClassDate,
   formatNumber,
   type ActionItem,
   type BadgeProps,
@@ -82,7 +83,7 @@ function CampaignsTab({ onToast }: { onToast: (toast: ToastState) => void }) {
   const columns: Column<Campaign>[] = [
     { key: 'section', header: t('whatsapp.campaigns.section'), render: (c) => c.sectionName ?? <span className="text-ink-400">—</span> },
     { key: 'template', header: t('whatsapp.campaigns.template'), render: (c) => <span className="ef-num">{c.templateCode}</span> },
-    { key: 'date', header: t('whatsapp.campaigns.date'), render: (c) => c.targetDate ? <span className="ef-num" dir="ltr">{c.targetDate}</span> : <span className="text-ink-400">—</span> },
+    { key: 'date', header: t('whatsapp.campaigns.date'), render: (c) => c.targetDate ? <span>{formatClassDate(c.targetDate)}</span> : <span className="text-ink-400">—</span> },
     { key: 'status', header: t('whatsapp.campaigns.status'), render: (c) => <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{t(`whatsapp.statuses.${c.status}`, c.status)}</Badge> },
     { key: 'counts', header: t('whatsapp.campaigns.counts'), render: (c) => <span className="ef-num text-xs text-ink-600">{t('whatsapp.campaigns.countsSummary', { queued: formatNumber(c.counts.queued), sent: formatNumber(c.counts.sent), failed: formatNumber(c.counts.failed) })}</span> },
     {

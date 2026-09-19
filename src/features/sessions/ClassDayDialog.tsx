@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
+  DatePicker,
   Dialog,
   Field,
+  formatClassDate,
   IconButton,
   Input,
   Select,
-  formatClassDate,
   type SelectOption,
 } from '../../ds';
 import { useSubjectOptionsQuery } from '../catalogue';
@@ -133,7 +134,7 @@ export function ClassDayDialog({
             label={t('schedule.form.date')}
             hint={isPastDate(date) ? t('schedule.form.pastDateNote') : t('schedule.form.dateHint')}
           >
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label={t('schedule.form.date')} />
+            <DatePicker value={date} onChange={setDate} aria-label={t('schedule.form.date')} />
           </Field>
         )}
 

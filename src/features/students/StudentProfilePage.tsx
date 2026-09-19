@@ -13,6 +13,8 @@ import {
   RoleGate,
   StatCard,
   Toast,
+  formatClassDate,
+  formatGregorianDate,
   formatNumber,
   type BadgeProps,
   type Column,
@@ -199,7 +201,10 @@ function InfoCard({ student }: { student: StudentDetail }) {
       <dl className="space-y-3">
         <InfoRow label={t('students.profile.info.phone')} value={student.phone} numeric />
         <InfoRow label={t('students.profile.info.whatsapp')} value={student.whatsappPhone} numeric />
-        <InfoRow label={t('students.profile.info.birthDate')} value={student.birthDate} numeric />
+        <InfoRow
+          label={t('students.profile.info.birthDate')}
+          value={student.birthDate ? formatGregorianDate(student.birthDate) : student.birthDate}
+        />
         <InfoRow label={t('students.form.governorate')} value={govName} />
         <InfoRow label={t('students.form.markaz')} value={markazName} />
         <InfoRow label={t('students.profile.info.address')} value={student.address} />
@@ -285,7 +290,7 @@ function AttendancePanel({ id }: { id: string }) {
   const query = useStudentAttendanceQuery(id);
 
   const columns: Column<AttendanceRecord>[] = [
-    { key: 'date', header: t('students.profile.attendance.date'), numeric: true, render: (r) => r.sessionDate },
+    { key: 'date', header: t('students.profile.attendance.date'), render: (r) => formatClassDate(r.sessionDate) },
     { key: 'subject', header: t('students.profile.attendance.subject'), render: (r) => r.subjectName },
     { key: 'section', header: t('students.profile.attendance.section'), render: (r) => r.sectionName },
     {
@@ -356,7 +361,7 @@ function AbsenceBanner({ id, position }: { id: string; position: AbsencePosition
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm">
             {position.warningSentAt
-              ? t('students.profile.warn.sentAt', { date: position.warningSentAt.slice(0, 10) })
+              ? t('students.profile.warn.sentAt', { date: formatClassDate(position.warningSentAt.slice(0, 10)) })
               : t('students.profile.warn.notSent')}
           </span>
           <Button size="sm" variant="secondary" icon="message-circle" onClick={send} loading={warnState.isLoading}>
@@ -498,7 +503,7 @@ function PlacementsPanel({ id }: { id: string }) {
   const query = useStudentPlacementsQuery(id);
 
   const columns: Column<Placement>[] = [
-    { key: 'date', header: t('students.profile.placements.date'), numeric: true, render: (r) => r.assessedOn },
+    { key: 'date', header: t('students.profile.placements.date'), render: (r) => formatClassDate(r.assessedOn) },
     { key: 'method', header: t('students.profile.placements.method'), render: (r) => r.method },
     {
       key: 'score',

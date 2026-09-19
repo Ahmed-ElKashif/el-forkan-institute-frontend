@@ -36,6 +36,7 @@ export function SectionTeachersDialog({
   const [error, setError] = useState<string | null>(null);
 
   const assignedIds = new Set(section.teachers.map((teacher) => teacher.userId));
+  const hasPrimary = section.teachers.some((teacher) => teacher.isPrimary);
   const options: SelectOption[] = (teachers.data ?? [])
     .filter((teacher) => !assignedIds.has(teacher.id))
     .map((teacher) => ({ value: teacher.id, label: teacher.fullName }));
@@ -112,11 +113,23 @@ export function SectionTeachersDialog({
               disabled={options.length === 0}
             />
           </Field>
-          <Checkbox
-            label={t('sections.teachers.makePrimary')}
-            checked={isPrimary}
-            onChange={(e) => setIsPrimary(e.target.checked)}
-          />
+          {/* A class has one responsible teacher — a partial unique index in the
+              DDL enforces it, and a level's two responsible teachers are one per
+              cohort, not two on the same class. Disabling the box says so up
+              front instead of letting the server reject the assignment. */}
+          <div className="grid gap-1">
+            <Checkbox
+              label={t('sections.teachers.makePrimary')}
+              checked={isPrimary && !hasPrimary}
+              disabled={hasPrimary}
+              onChange={(e) => setIsPrimary(e.target.checked)}
+            />
+            {hasPrimary ? (
+              <p className="m-0 text-xs text-ink-500">
+                {t('sections.detail.teachers.primaryTaken')}
+              </p>
+            ) : null}
+          </div>
           <div>
             <Button icon="plus" onClick={add} disabled={userId === '' || busy} loading={assignState.isLoading}>
               {t('sections.teachers.addButton')}
