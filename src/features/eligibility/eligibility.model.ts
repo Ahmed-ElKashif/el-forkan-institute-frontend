@@ -21,7 +21,6 @@ export interface EligibilityRow {
   id: string;
   enrollmentId: string;
   studentName: string;
-  studentCode: string;
   isEligible: boolean;
   reasonCode: string;
   reasonNote: string | null;

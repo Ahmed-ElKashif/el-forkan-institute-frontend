@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -7,6 +7,7 @@ import {
   Button,
   Checkbox,
   DataTable,
+  Icon,
   LockBanner,
   RoleGate,
   ScoreInput,
@@ -123,6 +124,17 @@ export function ScoreGridPage() {
 
   return (
     <section className="space-y-4">
+      {/* The grid is the deepest screen in the product and used to name only its
+          subject, so a reload or a shared link stranded the reader. It points up
+          at the worklist rather than "back": that is where this task belongs
+          whichever way the grid was opened. */}
+      <Link
+        to="/scores"
+        className="inline-flex items-center gap-1 text-sm text-ink-500 no-underline hover:text-ink-700"
+      >
+        <Icon name="chevron-right" size={16} mirror />
+        {t('scores.backToOpenExams')}
+      </Link>
       <h2 className="text-lg font-bold text-ink-900">{gridData.subjectNameAr}</h2>
 
       <LockBanner
@@ -199,7 +211,6 @@ function buildColumns(config: {
       render: (row) => (
         <div className="flex flex-col gap-0.5">
           <span className="font-semibold text-ink-900">{row.studentName}</span>
-          <span className="ef-num text-xs text-ink-400">{row.studentCode}</span>
         </div>
       ),
     },

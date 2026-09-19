@@ -1,12 +1,17 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { ChangeEvent, InputHTMLAttributes, ReactNode } from 'react';
 import { Icon, type IconName } from '../core/Icon';
 import { cn } from '../cn';
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   size?: 'sm' | 'md';
   invalid?: boolean;
-  /** Tabular Latin digits, centred — scores, counts, serials. */
+  /** Tabular Latin digits, centred — scores, counts, serials. Styling only. */
   numeric?: boolean;
+  /** Integer digit strings only: strips any non-digit as it is typed or pasted
+   *  (national ID, Hijri year). The server stays the authority — this is UX, so a
+   *  letter never reaches a field that only holds a number. Decimal fields use
+   *  `type="number"` instead, which the browser guards. */
+  digits?: boolean;
   icon?: IconName;
   suffix?: ReactNode;
   /** Applied to the relative wrapper when `icon` or `suffix` is present. */
@@ -20,18 +25,33 @@ export function Input({
   size = 'md',
   invalid = false,
   numeric = false,
+  digits = false,
   readOnly = false,
   disabled = false,
   icon,
   suffix,
   className,
   wrapperClassName,
+  onChange,
   ...rest
 }: InputProps) {
+  // Strip non-digits before the value reaches the caller's onChange, so a
+  // digits-only field can never hold letters (typed or pasted). The input is
+  // controlled, so mutating the event's value here and re-rendering agree.
+  const handleChange =
+    digits && onChange
+      ? (event: ChangeEvent<HTMLInputElement>) => {
+          const cleaned = event.target.value.replace(/\D/g, '');
+          if (cleaned !== event.target.value) event.target.value = cleaned;
+          onChange(event);
+        }
+      : onChange;
+
   const control = (
     <input
       readOnly={readOnly}
       disabled={disabled}
+      onChange={handleChange}
       aria-invalid={invalid || undefined}
       className={cn(
         'w-full rounded-md border px-3 text-base text-ink-900',

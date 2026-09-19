@@ -29,17 +29,30 @@ const sectionsApi = api.injectEndpoints({
       query: (id) => ({ path: `/sections/${id}` }),
       providesTags: ['Section'],
     }),
-    /* The class roster. Tagged 'Section' so a transfer or a new enrolment
-       refreshes the list the detail page is showing. */
-    listEnrollments: build.query<Page<Enrollment>, { sectionId: string; page: number }>({
-      query: ({ sectionId, page }) => ({
+    /* The class roster. Tagged 'Section' so a transfer, a new enrolment or a
+       withdrawal refreshes the list the roster is showing. `status` narrows to a
+       cohort's active / withdrawn / completed members (who took the level off). */
+    listEnrollments: build.query<
+      Page<Enrollment>,
+      { sectionId: string; page: number; status?: string }
+    >({
+      query: ({ sectionId, page, status }) => ({
         path: `/enrollments?${toQueryString({
           sectionId,
           page,
           pageSize: DEFAULT_PAGE_SIZE,
+          status,
         })}`,
       }),
       providesTags: ['Section'],
+    }),
+    /* Withdraw a student from a class (status → 'withdrawn') or bring a returning
+       one back ('active'). The student record is untouched — the institute's
+       students take years off and re-enrol, so this is reversible, not a delete.
+       Invalidates 'Student' too so the profile's enrolment history stays current. */
+    updateEnrollment: build.mutation<Enrollment, { id: string; status: string }>({
+      query: ({ id, status }) => ({ method: 'PATCH', path: `/enrollments/${id}`, body: { status } }),
+      invalidatesTags: ['Section', 'Student'],
     }),
     createSection: build.mutation<Section, CreateSectionInput>({
       query: (body) => ({ method: 'POST', path: '/sections', body }),
@@ -83,6 +96,7 @@ export const {
   useListSectionsQuery,
   useGetSectionQuery,
   useListEnrollmentsQuery,
+  useUpdateEnrollmentMutation,
   useCreateSectionMutation,
   useProvisionSectionsMutation,
   useUpdateSectionMutation,

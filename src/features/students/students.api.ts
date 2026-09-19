@@ -3,6 +3,7 @@ import { DEFAULT_PAGE_SIZE, toQueryString, type Page } from '../../shared/api/pa
 import type {
   AttendanceSummary,
   CarriedSubjectGroup,
+  CreateStudentInput,
   EnrollmentHistoryItem,
   ExamResult,
   Placement,
@@ -15,20 +16,27 @@ import type {
 const studentsApi = api.injectEndpoints({
   endpoints: (build) => ({
     listStudents: build.query<Page<Student>, StudentsQuery>({
-      query: ({ page, search, levelId, gender }) => ({
-        path: `/students?${toQueryString({ page, pageSize: DEFAULT_PAGE_SIZE, search, levelId, gender })}`,
+      query: ({ page, search, levelId, gender, status }) => ({
+        path: `/students?${toQueryString({ page, pageSize: DEFAULT_PAGE_SIZE, search, levelId, gender, status })}`,
       }),
       // Each distinct (page, search, levelId) is cached separately by RTK Query,
       // so paging and filtering back and forth is instant after the first visit.
       providesTags: ['Student'],
     }),
+    // Register a student manually (the roster's "add new"). Gender and branch come
+    // from the class being added to; the code is generated server-side. Both roles
+    // may create (spec §3). We read back the id to enroll them next.
+    createStudent: build.mutation<{ id: string; fullName: string }, CreateStudentInput>({
+      query: (body) => ({ method: 'POST', path: '/students', body }),
+      invalidatesTags: ['Student'],
+    }),
     // Set a student's study year by enrolling them into a section of the target
     // level for the current year (§5). The legacy import lands students with no
-    // year — this is how the head teacher assigns it. Invalidates the student so
-    // the study year and roster refresh.
+    // year — this is how the head teacher assigns it. Invalidates 'Section' too so
+    // the class roster the enrolment lands in refreshes, not only the student.
     assignEnrollment: build.mutation<unknown, { studentId: string; sectionId: string }>({
       query: (body) => ({ method: 'POST', path: '/enrollments', body }),
-      invalidatesTags: (_result, _error, { studentId }) => [{ type: 'Student', id: studentId }, 'Student'],
+      invalidatesTags: (_result, _error, { studentId }) => [{ type: 'Student', id: studentId }, 'Student', 'Section'],
     }),
     // Correct a wrong study year: move the existing enrollment to another
     // section (`PATCH` can't — the section is a composite-FK identity).
@@ -104,6 +112,7 @@ const studentsApi = api.injectEndpoints({
 
 export const {
   useListStudentsQuery,
+  useCreateStudentMutation,
   useAssignEnrollmentMutation,
   useTransferEnrollmentMutation,
   useUpdateStudentMutation,

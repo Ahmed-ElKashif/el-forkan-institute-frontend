@@ -14,7 +14,7 @@ const PAYLOAD: CertificatePrintPayload = {
   certificateId: 'c1',
   serialNo: 'L4-1447-0001',
   studentName: 'أحمد سالم',
-  studentCode: '2026-0001',
+  
   levelCode: 'L4',
   levelNameAr: 'المستوى الرابع',
   instituteNameAr: 'معهد الفرقان',

@@ -14,6 +14,17 @@ export interface Exam {
   passScore: number;
 }
 
+/** The exams one cohort sits: its own level's, and of those the ones set for its
+ *  gender or shared between both — a null `gender` is a shared sitting (R3).
+ *  Both the exam picker and the term-close readiness list ask this, and they
+ *  must agree: a paper counted for one cohort and not the other would make a
+ *  term look ready when it is not. */
+export function examsForCohort(exams: Exam[], levelId: number, gender: string): Exam[] {
+  return exams.filter(
+    (exam) => exam.levelId === levelId && (exam.gender === null || exam.gender === gender),
+  );
+}
+
 /** The body of `POST /exams`. The exam inherits max/pass from its curriculum
  *  row (§4.2), so neither is sent; `gender: null` is a shared sitting (R3). */
 export interface CreateExamInput {
@@ -33,7 +44,6 @@ export type ScoreResult = 'pending' | 'pass' | 'fail' | 'absent';
 export interface ScoreRow {
   enrollmentId: string;
   studentName: string;
-  studentCode: string;
   /** Null until the student has a stored result row (nothing entered yet). The
    *  correction endpoint addresses this id, so a row without one cannot be
    *  corrected, only entered. */

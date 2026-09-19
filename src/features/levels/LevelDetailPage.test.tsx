@@ -33,14 +33,14 @@ const SECTION = (id: string, gender: 'male' | 'female') => ({
   defaultMode: 'onsite', capacity: 20, enrolledCount: 1, teachers: [],
 });
 
-const yearKey = `GET /academic-years?${toQueryString({ page: 1, pageSize: 1 })}`;
+const yearKey = `GET /academic-years?${toQueryString({ page: 1, pageSize: 100 })}`;
 const sectionsKey = `GET /sections?${toQueryString({ academicYearId: 1, page: 1, pageSize: 100, branchId: undefined })}`;
 const rosterKey = (sectionId: string) =>
-  `GET /enrollments?${toQueryString({ sectionId, page: 1, pageSize: DEFAULT_PAGE_SIZE })}`;
+  `GET /enrollments?${toQueryString({ sectionId, page: 1, pageSize: DEFAULT_PAGE_SIZE, status: 'active' })}`;
 
 function roster(studentName: string) {
   return {
-    items: [{ id: `e-${studentName}`, studentId: 's', studentName, studentCode: '2026-1', entryType: 'new', status: 'active', isHistorical: false }],
+    items: [{ id: `e-${studentName}`, studentId: 's', studentName, entryType: 'new', status: 'active', isHistorical: false }],
     total: 1, page: 1, pageSize: DEFAULT_PAGE_SIZE,
   };
 }

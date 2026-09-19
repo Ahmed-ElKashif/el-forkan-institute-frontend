@@ -8,9 +8,22 @@ const EXAMS_PAGE_SIZE = 100;
 
 const scoresApi = api.injectEndpoints({
   endpoints: (build) => ({
-    listExams: build.query<Page<Exam>, { levelId: number; termId?: number; date?: string }>({
-      query: ({ levelId, termId, date }) => ({
-        path: `/exams?${toQueryString({ levelId, termId, date, page: 1, pageSize: EXAMS_PAGE_SIZE })}`,
+    /* Omitting `levelId` reads every level the viewer may see — how the Scores
+       nav lists the exams still awaiting marks. `isLocked` goes over the wire as
+       a string because the API parses it with zod's `stringbool`. */
+    listExams: build.query<
+      Page<Exam>,
+      { levelId?: number; termId?: number; date?: string; isLocked?: boolean }
+    >({
+      query: ({ levelId, termId, date, isLocked }) => ({
+        path: `/exams?${toQueryString({
+          levelId,
+          termId,
+          date,
+          isLocked: isLocked === undefined ? undefined : String(isLocked),
+          page: 1,
+          pageSize: EXAMS_PAGE_SIZE,
+        })}`,
       }),
       providesTags: ['ExamScores'],
     }),

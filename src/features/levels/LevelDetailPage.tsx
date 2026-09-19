@@ -1,61 +1,50 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Badge,
   Button,
   Card,
   EmptyState,
+  Field,
   Icon,
   IconButton,
+  Select,
   Tabs,
   Toast,
-  type Column,
+  formatNumber,
   type TabItem,
 } from '../../ds';
-import { ListSkeleton, PagedList } from '../../shared/react/PagedList';
+import { ListSkeleton } from '../../shared/react/PagedList';
+import { useAcademicYearQuery } from '../../shared/api/calendar';
 import { useTabParam } from '../../shared/react/useTabParam';
-import { useCurrentAcademicYearQuery } from '../../shared/api/calendar';
 import { useAuth } from '../auth';
 import { AttendanceTab } from '../attendance';
-import { CataloguePage, LevelEditDialog, useLevelsQuery } from '../catalogue';
+import { LevelEditDialog } from '../catalogue';
+import { CurriculumPage } from '../curriculum';
 import { ScoresTab } from '../scores';
 import { ClassDaysTab } from '../sessions';
 import {
+  RosterTab,
   SectionTeachersDialog,
   useGetSectionQuery,
-  useListEnrollmentsQuery,
-  useListSectionsQuery,
-  type Enrollment,
   type SectionDetail,
 } from '../sections';
-import { GENDERS, findSection, type Gender } from './level.model';
+import { LevelGenderHeader } from './LevelGenderHeader';
+import { useGenderParam, useLevelSection } from './useLevelSection';
 
-// Roster, attendance and scores are gendered and open to teachers; the
-// catalogue, class days and teachers tabs are head-teacher work. The catalogue
-// is level-wide (shared by both cohorts), so it ignores the gender filter; the
-// rest read the resolved cohort.
-const TAB_KEYS = ['roster', 'attendance', 'scores', 'catalogue', 'classDays', 'teachers'] as const;
+/* Class work first (roster, attendance, scores — what a teacher opens daily),
+   then this level's own setup, which only the head teacher sees. The subject and
+   book registries used to sit here too, behind a second tab strip; they are
+   institute-wide catalogues, not this level's, so they moved to /catalogue and
+   what remains is genuinely level-scoped. The curriculum and promotion tabs are
+   level-wide (both cohorts), so they ignore the gender filter; the rest read the
+   resolved cohort. */
+const TAB_KEYS = ['roster', 'attendance', 'scores', 'curriculum', 'classDays', 'teachers'] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 const TEACHER_TABS: readonly TabKey[] = ['roster', 'attendance', 'scores'];
-
-/** The chosen cohort, in `?gender=`, so a boys/girls switch is shareable and
- *  survives a reload. Defaults to boys; an unknown value falls back rather than
- *  resolving no class. */
-function useGenderParam(): [Gender, (gender: Gender) => void] {
-  const [params, setParams] = useSearchParams();
-  const gender: Gender = params.get('gender') === 'female' ? 'female' : 'male';
-  const setGender = (next: Gender) =>
-    setParams(
-      (previous) => {
-        const merged = new URLSearchParams(previous);
-        merged.set('gender', next);
-        return merged;
-      },
-      { replace: true },
-    );
-  return [gender, setGender];
-}
+/** R6 — a year has two terms. */
+const TERM_NUMBERS = [1, 2];
 
 /** One level, and everything that belongs to it. A level owns a boys' class and
  *  a girls' class (R3); the gender filter switches which cohort the gendered
@@ -71,23 +60,15 @@ export function LevelDetailPage() {
   const [editingLevel, setEditingLevel] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  const levels = useLevelsQuery();
-  const year = useCurrentAcademicYearQuery();
-  const yearId = year.data?.id ?? 0;
-  const sections = useListSectionsQuery(
-    { academicYearId: yearId, page: 1, pageSize: 100 },
-    { skip: year.data == null },
-  );
+  const { level, section, yearId, isLoading, notFound } = useLevelSection(levelId, gender);
 
   const keys: readonly TabKey[] = isHeadTeacher ? TAB_KEYS : TEACHER_TABS;
   const [tab, setTab] = useTabParam<TabKey>(keys, 'roster');
 
-  const level = levels.data?.find((l) => l.id === levelId);
-  const section = findSection(sections.data?.items, levelId, gender);
   const detail = useGetSectionQuery(section?.id ?? '', { skip: section == null });
 
-  if (levels.isLoading || year.isLoading || sections.isLoading) return <ListSkeleton />;
-  if (!level) {
+  if (isLoading) return <ListSkeleton />;
+  if (notFound || level == null) {
     return (
       <EmptyState
         icon="book-open"
@@ -103,7 +84,7 @@ export function LevelDetailPage() {
     { key: 'scores', label: t('levels.detail.tabs.scores') },
     ...(isHeadTeacher
       ? [
-          { key: 'catalogue', label: t('levels.detail.tabs.catalogue') },
+          { key: 'curriculum', label: t('levels.detail.tabs.curriculum') },
           { key: 'classDays', label: t('levels.detail.tabs.classDays') },
           { key: 'teachers', label: t('sections.detail.tabs.teachers'), count: section?.teachers.length },
         ]
@@ -112,17 +93,14 @@ export function LevelDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <Link
-          to="/levels"
-          className="inline-flex items-center gap-1 text-sm text-ink-500 no-underline hover:text-ink-700"
-        >
-          <Icon name="chevron-right" size={16} mirror />
-          {t('levels.detail.back')}
-        </Link>
-        <div className="mt-1 mb-2 flex items-center gap-2">
-          <h1 className="m-0 text-xl font-bold text-ink-900">{level.nameAr}</h1>
-          {isHeadTeacher ? (
+      <LevelGenderHeader
+        title={level.nameAr}
+        backTo="/levels"
+        backLabel={t('levels.detail.back')}
+        gender={gender}
+        onGenderChange={setGender}
+        action={
+          isHeadTeacher ? (
             <IconButton
               icon="settings"
               variant="ghost"
@@ -130,28 +108,17 @@ export function LevelDetailPage() {
               label={t('levels.detail.editLevel')}
               onClick={() => setEditingLevel(true)}
             />
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t('levels.detail.genderFilter')}>
-          {GENDERS.map((option) => (
-            <Badge
-              key={option}
-              pressable
-              active={gender === option}
-              onClick={() => setGender(option)}
-            >
-              {t(`levels.detail.gender.${option}`)}
-            </Badge>
-          ))}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       <Tabs items={tabs} active={tab} onSelect={(key) => setTab(key as TabKey)} />
 
-      {/* The catalogue is level-wide, so it renders whether or not this gender
-          has a class provisioned. The gendered tabs need the resolved cohort. */}
-      {tab === 'catalogue' ? (
-        <CataloguePage lockedLevelId={levelId} tabParam="cat" />
+      {/* The curriculum is level-wide (both cohorts), so it renders whether or
+          not this gender has a class provisioned. The gendered tabs need the
+          resolved cohort. */}
+      {tab === 'curriculum' ? (
+        <LevelCurriculumTab levelId={levelId} yearId={yearId} />
       ) : section == null ? (
         <EmptyState
           icon="users"
@@ -159,7 +126,7 @@ export function LevelDetailPage() {
           description={t('levels.detail.noCohort.description')}
         />
       ) : tab === 'roster' ? (
-        <RosterTab sectionId={section.id} />
+        <RosterTab sectionId={section.id} sectionGender={gender} sectionBranchId={section.branchId} />
       ) : tab === 'attendance' ? (
         <AttendanceTab sectionId={section.id} academicYearId={yearId} />
       ) : tab === 'classDays' ? (
@@ -194,61 +161,52 @@ export function LevelDetailPage() {
   );
 }
 
-function RosterTab({ sectionId }: { sectionId: string }) {
+/** This level's syllabus, inside the hub — **shown, not edited**.
+ *
+ *  The plan belongs to the الخطة الدراسية screen, which owns the subject and book
+ *  registries it draws on. This tab used to carry the identical write set, so the
+ *  same مقرر could be added from two screens with nothing to say which one the
+ *  institute's record lived on. The link goes there at this exact scope, so
+ *  editing is one click away rather than a second place.
+ *
+ *  The hub supplies the level and the year; only the term is left to choose. The
+ *  year is *shown* rather than assumed: the plan is year-scoped (§5.1). */
+function LevelCurriculumTab({ levelId, yearId }: { levelId: number; yearId: number }) {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
-  const list = useListEnrollmentsQuery({ sectionId, page });
+  const navigate = useNavigate();
+  const year = useAcademicYearQuery(yearId, { skip: yearId === 0 });
+  const [termNumber, setTermNumber] = useState(1);
 
-  const columns: Column<Enrollment>[] = [
-    {
-      key: 'student',
-      header: t('sections.detail.roster.student'),
-      render: (row) => (
-        <Link to={`/students/${row.studentId}`} className="text-link no-underline hover:underline">
-          {row.studentName}
-        </Link>
-      ),
-    },
-    {
-      key: 'code',
-      header: t('sections.detail.roster.code'),
-      render: (row) => <span className="ef-num">{row.studentCode}</span>,
-    },
-    {
-      key: 'entry',
-      header: t('sections.detail.roster.entry'),
-      render: (row) => t(`sections.entryType.${row.entryType}`, row.entryType),
-    },
-    {
-      key: 'status',
-      header: t('sections.detail.roster.status'),
-      render: (row) => (
-        <Badge tone={row.status === 'active' ? 'success' : 'neutral'}>
-          {t(`students.profile.enrollmentStatus.${row.status}`, row.status)}
-        </Badge>
-      ),
-    },
-  ];
+  /* The scope the catalogue reads from the URL (`useCatalogueScope`), so it opens
+     on the very syllabus being looked at rather than on its own defaults. */
+  const editHref = `/catalogue?tab=curriculum&year=${yearId}&level=${levelId}&term=${termNumber}`;
 
   return (
-    <PagedList
-      data={list.data}
-      isLoading={list.isLoading}
-      isError={list.isError}
-      isFetching={list.isFetching}
-      columns={columns}
-      getRowKey={(row) => row.id}
-      errorTitle={t('sections.detail.roster.error')}
-      page={page}
-      onPage={setPage}
-      empty={
-        <EmptyState
-          icon="users"
-          title={t('sections.detail.roster.empty.title')}
-          description={t('sections.detail.roster.empty.description')}
-        />
-      }
-    />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label={t('curriculum.filters.term')} className="w-40">
+          <Select
+            options={TERM_NUMBERS.map((n) => ({
+              value: n,
+              label: t('curriculum.term', { n: formatNumber(n) }),
+            }))}
+            value={termNumber}
+            onChange={(e) => setTermNumber(Number(e.target.value))}
+            aria-label={t('curriculum.filters.term')}
+          />
+        </Field>
+        {year.data ? (
+          <p className="m-0 pb-2 text-sm text-ink-500">
+            {t('catalogue.scope.yearLabel', { n: formatNumber(year.data.hijriYear) })}
+          </p>
+        ) : null}
+        <Button className="ms-auto" variant="secondary" icon="scroll-text" onClick={() => navigate(editHref)}>
+          {t('curriculum.editInCatalogue')}
+        </Button>
+      </div>
+
+      <CurriculumPage scope={{ yearId, levelId, termNumber }} readOnly />
+    </div>
   );
 }
 
@@ -293,6 +251,7 @@ function TeachersTab({ section }: { section: SectionDetail }) {
             name: section.name,
             gender: section.gender,
             levelId: section.levelId,
+            branchId: section.branchId,
             defaultMode: section.defaultMode,
             enrolledCount: section.enrolledCount,
             capacity: section.capacity,

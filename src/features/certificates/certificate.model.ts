@@ -29,7 +29,6 @@ export interface CertificatePrintPayload {
   certificateId: string;
   serialNo: string | null;
   studentName: string;
-  studentCode: string;
   levelCode: string;
   levelNameAr: string;
   instituteNameAr: string;

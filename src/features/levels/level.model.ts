@@ -7,6 +7,12 @@ export type Gender = 'male' | 'female';
 
 export const GENDERS: readonly Gender[] = ['male', 'female'];
 
+/** Cohort display order: the boys' class before the girls', so every level reads
+ *  the same way down a list of classes. */
+export function genderRank(gender: string): number {
+  return gender === 'male' ? 0 : 1;
+}
+
 /** The gendered class a (level, gender) resolves to for the loaded year. A level
  *  owns exactly one class per gender (`sections` UNIQUE (branch, year, level,
  *  gender)), so this is a lookup, not a filter that can return many. */

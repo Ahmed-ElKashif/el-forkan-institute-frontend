@@ -1,114 +1,143 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, ConfirmDialog, Field, Select, Toast, formatNumber, type SelectOption } from '../../ds';
+import { Alert, Button, ConfirmDialog, Toast, formatNumber } from '../../ds';
 import { ListSkeleton } from '../../shared/react/PagedList';
-import { useAcademicYearsQuery } from '../../shared/api/calendar';
-import { useBookOptionsQuery, useLevelsQuery, useSubjectOptionsQuery } from '../catalogue';
+/* Direct file imports, not the `../catalogue` barrel: that barrel's
+   `CataloguePage` renders this page, and going through it would make the two
+   features a cycle. */
+import { useBookOptionsQuery, useSubjectOptionsQuery } from '../catalogue/catalogue.api';
+import { useListExamsQuery } from '../scores/scores.api';
 import {
   useCurriculumTreeQuery,
   useRemoveCurriculumMutation,
   useRemoveCurriculumUnitMutation,
+  useUpdateCurriculumMutation,
 } from './curriculum.api';
 import { CurriculumRowCard, type RowActions } from './CurriculumRowCard';
 import { CurriculumRowDialog, type RowDialogTarget } from './CurriculumRowDialog';
-import { UnitDialog } from './UnitDialog';
-import type { CurriculumUnit } from './curriculum.model';
-
-const TERMS = [1, 2];
+import { BookDialog } from './BookDialog';
+import { refusalKey } from './refusal';
+import { allSubjects, nextSortOrderFor } from './curriculum.model';
+import type { CurriculumRow, CurriculumUnit } from './curriculum.model';
 
 type ToastState = { tone: 'success' | 'danger'; message: string };
-type UnitTarget = { curriculumId: number; unit: CurriculumUnit | null };
+type BookTarget = { curriculumId: number; unit: CurriculumUnit | null; nextSortOrder: number };
 type DeleteTarget = { kind: 'row' | 'unit'; id: number; name: string };
 
-/** The curriculum builder (head-teacher only, gated): pick a year, level and
- *  term, then build the syllabus tree — مواد, their فروع one level deep, and the
- *  units (book + scope) under each. Every write re-reads the tree via the
- *  `Curriculum` tag, so the screen has no local state to reconcile.
+/** Which year, level and term the plan is being read for. Structural rather than
+ *  imported from the catalogue, so this feature keeps no dependency on it. */
+export interface PlanScope {
+  yearId: number | null;
+  levelId: number | null;
+  termNumber: number;
+}
+
+/**
+ * The study plan for one المستوى and فصل — the مواد, their فروع one level deep,
+ * and the books prescribed under each.
  *
- *  Embedded inside a level (the level hub's catalogue tab), `lockedLevelId`
- *  fixes the level and hides the year+level pickers — the level and its current
- *  year are already the page's context, leaving only the term to choose. */
-export function CurriculumPage({ lockedLevelId }: { lockedLevelId?: number } = {}) {
+ * The year, level and term come from the screen's shared scope rather than from
+ * pickers of its own, so this reads the same context the الكتب and المواد tabs
+ * do, and the level hub can embed it without hiding which year is being edited.
+ *
+ * Every write re-reads the tree through the `Curriculum` tag, so there is no
+ * local state to reconcile.
+ *
+ * `readOnly` renders the same plan without any way to change it. The plan is
+ * owned by the الخطة الدراسية screen and shown elsewhere — a syllabus editable
+ * from two places is a syllabus with two owners, and the level hub's copy gave no
+ * sign it was writing the institute's record rather than that level's.
+ */
+export function CurriculumPage({ scope, readOnly = false }: { scope: PlanScope; readOnly?: boolean }) {
   const { t } = useTranslation();
-  const years = useAcademicYearsQuery();
-  const levels = useLevelsQuery();
   const subjects = useSubjectOptionsQuery();
   const books = useBookOptionsQuery();
 
-  const [pickedYear, setPickedYear] = useState<number | null>(null);
-  const [pickedLevel, setPickedLevel] = useState<number | null>(null);
-  const [termNumber, setTermNumber] = useState(1);
-
-  // Default to the newest year and the first level until the user picks; derived
-  // during render so there is no set-state-in-effect. A locked level always
-  // wins, so the embedded builder cannot drift off its level.
-  const yearId = pickedYear ?? years.data?.[0]?.id ?? null;
-  const levelId = lockedLevelId ?? pickedLevel ?? levels.data?.[0]?.id ?? null;
+  const { yearId, levelId, termNumber } = scope;
   const canQuery = yearId != null && levelId != null;
 
   const tree = useCurriculumTreeQuery(
     { yearId: yearId ?? 0, levelId: levelId ?? 0, termNumber },
     { skip: !canQuery },
   );
+  /* Only to warn before a split: turning a مادة into a container makes it
+     non-examinable, and the server does not stop that even when an exam already
+     exists for it — that exam would simply be stranded. The exam view carries no
+     curriculum id, so the subject name is what there is to match on. */
+  const exams = useListExamsQuery({ levelId: levelId ?? 0 }, { skip: levelId == null });
 
   const [rowDialog, setRowDialog] = useState<RowDialogTarget | null>(null);
-  const [unitDialog, setUnitDialog] = useState<UnitTarget | null>(null);
+  const [bookDialog, setBookDialog] = useState<BookTarget | null>(null);
+  const [splitting, setSplitting] = useState<CurriculumRow | null>(null);
   const [confirm, setConfirm] = useState<DeleteTarget | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const [removeRow] = useRemoveCurriculumMutation();
   const [removeUnit] = useRemoveCurriculumUnitMutation();
+  const [updateRow] = useUpdateCurriculumMutation();
+
+  /* Adding a فرع to an examinable مادة used to fail every time: the server
+     requires a parent to be a container first, and nothing said so. It is one
+     action now — confirm the consequence, convert, then pick the فرع. A مادة that
+     is already a container needs no conversion and no confirmation. */
+  function startSplit(row: CurriculumRow) {
+    if (row.isExaminable) setSplitting(row);
+    else setRowDialog({ mode: 'create', parent: row });
+  }
+
+  async function confirmSplit() {
+    if (!splitting) return;
+    const parent = splitting;
+    setSplitting(null);
+    try {
+      await updateRow({ id: parent.id, patch: { isExaminable: false } }).unwrap();
+      setRowDialog({ mode: 'create', parent });
+    } catch (cause) {
+      setToast({ tone: 'danger', message: t(refusalKey(cause)) });
+    }
+  }
 
   const actions: RowActions = {
     onEdit: (row) => setRowDialog({ mode: 'edit', row }),
     onDelete: (row) => setConfirm({ kind: 'row', id: row.id, name: row.subjectNameAr }),
-    onAddChild: (row) => setRowDialog({ mode: 'create', parent: row }),
-    onAddUnit: (row) => setUnitDialog({ curriculumId: row.id, unit: null }),
-    onEditUnit: (row, unit) => setUnitDialog({ curriculumId: row.id, unit }),
-    onDeleteUnit: (unit) => setConfirm({ kind: 'unit', id: unit.id, name: unit.syllabusScopeAr }),
+    onAddChild: startSplit,
+    onAddUnit: (row) =>
+      setBookDialog({ curriculumId: row.id, unit: null, nextSortOrder: nextSortOrderFor(row.units) }),
+    onEditUnit: (row, unit) =>
+      setBookDialog({ curriculumId: row.id, unit, nextSortOrder: unit.sortOrder }),
+    onDeleteUnit: (unit) =>
+      setConfirm({ kind: 'unit', id: unit.id, name: unit.bookTitleAr ?? unit.syllabusScopeAr }),
   };
 
   async function confirmDelete() {
     if (!confirm) return;
-    const run = confirm.kind === 'row' ? removeRow(confirm.id) : removeUnit(confirm.id);
+    const target = confirm;
+    setConfirm(null);
+    const run = target.kind === 'row' ? removeRow(target.id) : removeUnit(target.id);
     try {
       await run.unwrap();
       setToast({ tone: 'success', message: t('curriculum.deleted') });
-    } catch {
-      setToast({ tone: 'danger', message: t('curriculum.saveError') });
-    } finally {
-      setConfirm(null);
+    } catch (cause) {
+      setToast({ tone: 'danger', message: t(refusalKey(cause)) });
     }
   }
 
-  const yearOptions: SelectOption[] = (years.data ?? []).map((y) => ({ value: y.id, label: `${formatNumber(y.hijriYear)} هـ` }));
-  const levelOptions: SelectOption[] = (levels.data ?? []).map((l) => ({ value: l.id, label: l.nameAr }));
-  const termOptions: SelectOption[] = TERMS.map((n) => ({ value: n, label: t('curriculum.term', { n: formatNumber(n) }) }));
+  const planned = allSubjects(tree.data ?? []);
+  const splitHasExam =
+    splitting != null &&
+    (exams.data?.items ?? []).some((exam) => exam.subjectNameAr === splitting.subjectNameAr);
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        {lockedLevelId == null ? (
-          <>
-            <Field label={t('curriculum.filters.year')} className="w-40">
-              <Select options={yearOptions} value={yearId ?? ''} onChange={(e) => setPickedYear(Number(e.target.value))} aria-label={t('curriculum.filters.year')} />
-            </Field>
-            <Field label={t('curriculum.filters.level')} className="w-48">
-              <Select options={levelOptions} value={levelId ?? ''} onChange={(e) => setPickedLevel(Number(e.target.value))} aria-label={t('curriculum.filters.level')} />
-            </Field>
-          </>
-        ) : null}
-        <Field label={t('curriculum.filters.term')} className="w-40">
-          <Select options={termOptions} value={termNumber} onChange={(e) => setTermNumber(Number(e.target.value))} aria-label={t('curriculum.filters.term')} />
-        </Field>
-        <Button
-          className="ms-auto"
-          icon="plus"
-          disabled={!canQuery}
-          onClick={() => setRowDialog({ mode: 'create', parent: null })}
-        >
-          {t('curriculum.addSubject')}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PlanSummary subjects={planned} />
+        {readOnly ? (
+          <p className="m-0 text-xs text-ink-500">{t('curriculum.readOnlyHint')}</p>
+        ) : (
+          <Button icon="plus" disabled={!canQuery} onClick={() => setRowDialog({ mode: 'create', parent: null })}>
+            {t('curriculum.addSubject')}
+          </Button>
+        )}
       </div>
 
       {tree.isLoading && !tree.data ? (
@@ -120,7 +149,7 @@ export function CurriculumPage({ lockedLevelId }: { lockedLevelId?: number } = {
       ) : (
         <div className="space-y-3">
           {tree.data.map((node) => (
-            <CurriculumRowCard key={node.id} node={node} actions={actions} />
+            <CurriculumRowCard key={node.id} node={node} actions={readOnly ? undefined : actions} />
           ))}
         </div>
       )}
@@ -137,20 +166,40 @@ export function CurriculumPage({ lockedLevelId }: { lockedLevelId?: number } = {
         />
       ) : null}
 
-      {unitDialog ? (
-        <UnitDialog
-          curriculumId={unitDialog.curriculumId}
-          unit={unitDialog.unit}
+      {bookDialog ? (
+        <BookDialog
+          curriculumId={bookDialog.curriculumId}
+          unit={bookDialog.unit}
           books={books.data ?? []}
-          onClose={() => setUnitDialog(null)}
-          onSaved={(message) => { setUnitDialog(null); setToast({ tone: 'success', message }); }}
+          nextSortOrder={bookDialog.nextSortOrder}
+          onClose={() => setBookDialog(null)}
+          onSaved={(message) => { setBookDialog(null); setToast({ tone: 'success', message }); }}
+        />
+      ) : null}
+
+      {splitting ? (
+        <ConfirmDialog
+          title={t('curriculum.split.title', { name: splitting.subjectNameAr })}
+          consequence={
+            splitHasExam
+              ? t('curriculum.split.consequenceWithExam', { name: splitting.subjectNameAr })
+              : t('curriculum.split.consequence', { name: splitting.subjectNameAr })
+          }
+          confirmLabel={t('curriculum.split.confirm')}
+          cancelLabel={t('curriculum.cancel')}
+          tone={splitHasExam ? 'danger' : undefined}
+          onConfirm={confirmSplit}
+          onCancel={() => setSplitting(null)}
         />
       ) : null}
 
       {confirm ? (
         <ConfirmDialog
-          title={t(confirm.kind === 'row' ? 'curriculum.deleteRowTitle' : 'curriculum.deleteUnitTitle')}
-          consequence={t(confirm.kind === 'row' ? 'curriculum.deleteRowConsequence' : 'curriculum.deleteUnitConsequence', { name: confirm.name })}
+          title={t(confirm.kind === 'row' ? 'curriculum.deleteRowTitle' : 'curriculum.books.removeTitle')}
+          consequence={t(
+            confirm.kind === 'row' ? 'curriculum.deleteRowConsequence' : 'curriculum.books.removeConfirm',
+            { name: confirm.name },
+          )}
           confirmLabel={t('curriculum.delete')}
           cancelLabel={t('curriculum.cancel')}
           onConfirm={confirmDelete}
@@ -164,5 +213,27 @@ export function CurriculumPage({ lockedLevelId }: { lockedLevelId?: number } = {
         </div>
       ) : null}
     </section>
+  );
+}
+
+/** What this level and term actually commits to. «بلا كتاب» is the one worth
+ *  watching: a مادة with no book prescribed is a syllabus nobody can teach from. */
+function PlanSummary({ subjects }: { subjects: CurriculumRow[] }) {
+  const { t } = useTranslation();
+  if (subjects.length === 0) return <span />;
+
+  const mandatory = subjects.filter((row) => row.isMandatory).length;
+  const withoutBook = subjects.filter((row) => row.isExaminable && row.units.length === 0).length;
+
+  return (
+    <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-500">
+      <span>{t('curriculum.summary.subjects', { count: formatNumber(subjects.length) })}</span>
+      <span>{t('curriculum.summary.mandatory', { count: formatNumber(mandatory) })}</span>
+      {withoutBook > 0 ? (
+        <span className="text-warning">
+          {t('curriculum.summary.withoutBook', { count: formatNumber(withoutBook) })}
+        </span>
+      ) : null}
+    </p>
   );
 }

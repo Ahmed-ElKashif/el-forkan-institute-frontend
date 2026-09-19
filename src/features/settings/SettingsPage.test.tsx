@@ -28,7 +28,7 @@ const LEVELS = [
 ];
 
 const BASE: StubRoutes = {
-  'GET /academic-years?page=1&pageSize=1': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
+  'GET /academic-years?page=1&pageSize=100': { items: [{ id: 1, hijriYear: 1447 }], total: 1, page: 1, pageSize: 1 },
   'GET /levels': LEVELS,
   'GET /academic-years/1/attendance-policies': [DEFAULT_POLICY, L1_POLICY],
 };

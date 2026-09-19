@@ -8,6 +8,10 @@ export {
   useGetSectionQuery,
   useListSectionsQuery,
   useListEnrollmentsQuery,
+  useUpdateEnrollmentMutation,
   useProvisionSectionsMutation,
 } from './sections.api';
 export type { SectionDetail, Section, Enrollment } from './section.model';
+/* The class roster, with add/edit/withdraw. Owned here (section data) and shown
+   in the level hub's roster tab (features/levels). */
+export { RosterTab } from './RosterTab';

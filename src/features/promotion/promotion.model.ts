@@ -38,11 +38,26 @@ export interface PromotionRow {
   /** Set when the row cannot be decided (missing rule, historical enrolment).
    *  A blocked row is never written, so it is excluded from the confirm. */
   blocker: string | null;
+  /** The verdict a prior confirm already applied to this enrolment (and when), so
+   *  the screen shows run progress and marks a re-run's rows as already done. */
+  finalDecision: PromotionDecision | null;
+  decidedAt: string | null;
+  /** Subjects still owed from an EARLIER level (R13/R14), shown beside this year's
+   *  failures. Informational — the engine does not read it (carries gate COMP). */
+  pendingCarries: CarriedFromEarlier[];
+}
+
+export interface CarriedFromEarlier {
+  subjectId: number;
+  nameAr: string;
+  originLevelCode: string;
 }
 
 export interface PreviewParams {
   academicYearId: number;
   afterMakeup: boolean;
+  /** Scopes the run to one level (both cohorts). Omitted = the whole year. */
+  levelId?: number;
 }
 
 export interface ConfirmParams extends PreviewParams {
@@ -59,6 +74,8 @@ export interface ConfirmResult {
   enrollmentsCreated: number;
   carriesWritten: number;
   notMovedForward: number;
+  /** Students who finished a terminal level and are now marked graduated. */
+  graduated: number;
 }
 
 /** `PUT /promotion/overrides/:enrollmentId`. The reason is mandatory — it is

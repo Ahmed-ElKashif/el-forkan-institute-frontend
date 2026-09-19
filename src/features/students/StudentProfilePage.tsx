@@ -118,7 +118,7 @@ function ProfileHeader({ student }: { student: StudentDetail }) {
   return (
     <div className="space-y-2">
       <Link
-        to="/students"
+        to="/levels"
         className="inline-flex items-center gap-1 text-sm font-semibold text-brand-text hover:underline"
       >
         <Icon name="chevron-right" size={16} mirror />
@@ -131,9 +131,6 @@ function ProfileHeader({ student }: { student: StudentDetail }) {
         </Badge>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-500">
-        <span>
-          {t('students.profile.code')}: <span className="ef-num">{student.studentCode}</span>
-        </span>
         <span>{t(`students.gender.${student.gender}`)}</span>
         {studyYear ? (
           // Year on file, but correctable — a wrong year from the legacy import

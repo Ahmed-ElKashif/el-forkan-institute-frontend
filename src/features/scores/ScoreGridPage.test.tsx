@@ -32,7 +32,7 @@ const TEACHER: AuthUser = { ...HEAD, id: 't1', username: 'teacher1', role: 'teac
 const ROW = {
   enrollmentId: 'e1',
   studentName: 'أحمد سالم',
-  studentCode: '2026-0001',
+  
   resultId: 'r1',
   score: null,
   isAbsent: false,

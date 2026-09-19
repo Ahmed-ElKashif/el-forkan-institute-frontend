@@ -52,6 +52,31 @@ const catalogueApi = api.injectEndpoints({
       invalidatesTags: ['Catalogue'],
     }),
 
+    /* Only a subject nothing has used yet; the API refuses the rest and names
+       what is holding it. A taught subject is deactivated (`isActive`) instead —
+       curriculum rows, sessions and carried subjects point at it. */
+    removeSubject: build.mutation<void, number>({
+      query: (id) => ({ method: 'DELETE', path: `/subjects/${id}` }),
+      invalidatesTags: ['Catalogue'],
+    }),
+
+    /* Aliases are how the Excel import recognises a subject written the way the
+       sheets write it (§6.2 — the real files contain both `سيرة` and `سيره`).
+       The endpoints have always existed; nothing in the app called them, so the
+       only aliases in the database were the ones seeds put there. */
+    addSubjectAlias: build.mutation<unknown, { subjectId: number; aliasAr: string }>({
+      query: ({ subjectId, aliasAr }) => ({
+        method: 'POST',
+        path: `/subjects/${subjectId}/aliases`,
+        body: { aliasAr },
+      }),
+      invalidatesTags: ['Catalogue'],
+    }),
+    removeSubjectAlias: build.mutation<void, number>({
+      query: (aliasId) => ({ method: 'DELETE', path: `/subject-aliases/${aliasId}` }),
+      invalidatesTags: ['Catalogue'],
+    }),
+
     // Whole active set for the unit-book picker, same reasoning as subjectOptions.
     bookOptions: build.query<Book[], void>({
       query: () => ({ path: `/books?${toQueryString({ page: 1, pageSize: 100 })}` }),
@@ -59,8 +84,15 @@ const catalogueApi = api.injectEndpoints({
       providesTags: ['Catalogue'],
     }),
 
-    books: build.query<Page<Book>, { page: number }>({
-      query: ({ page }) => ({ path: `/books?${toQueryString({ page, pageSize: DEFAULT_PAGE_SIZE })}` }),
+    books: build.query<Page<Book>, { page: number; search: string; includeInactive: boolean }>({
+      query: ({ page, search, includeInactive }) => ({
+        path: `/books?${toQueryString({
+          page,
+          pageSize: DEFAULT_PAGE_SIZE,
+          search,
+          includeInactive: includeInactive ? 'true' : undefined,
+        })}`,
+      }),
       providesTags: ['Catalogue'],
     }),
     createBook: build.mutation<Book, CreateBookInput>({
@@ -81,6 +113,9 @@ export const {
   useSubjectsQuery,
   useCreateSubjectMutation,
   useUpdateSubjectMutation,
+  useRemoveSubjectMutation,
+  useAddSubjectAliasMutation,
+  useRemoveSubjectAliasMutation,
   useBookOptionsQuery,
   useBooksQuery,
   useCreateBookMutation,

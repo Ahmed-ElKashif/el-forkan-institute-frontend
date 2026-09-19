@@ -61,7 +61,6 @@ export function EligibilityPrintPage() {
               <tr className="border-b-2 border-gold-300 text-start">
                 <th className="w-10 py-1.5 text-start font-semibold">{t('eligibility.print.no')}</th>
                 <th className="py-1.5 text-start font-semibold">{t('eligibility.columns.name')}</th>
-                <th className="w-28 py-1.5 text-start font-semibold">{t('eligibility.columns.code')}</th>
                 <th className="w-36 py-1.5 text-start font-semibold">{t('eligibility.print.signature')}</th>
               </tr>
             </thead>
@@ -70,7 +69,6 @@ export function EligibilityPrintPage() {
                 <tr key={row.id} className="border-b border-gold-200">
                   <td className="ef-num py-2">{formatNumber(i + 1)}</td>
                   <td className="py-2">{row.studentName}</td>
-                  <td className="ef-num py-2">{row.studentCode}</td>
                   <td className="py-2" />
                 </tr>
               ))}
