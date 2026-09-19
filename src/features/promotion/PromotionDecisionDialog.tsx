@@ -103,6 +103,22 @@ export function PromotionDecisionDialog({
           />
         </Field>
 
+        {/* The two readings of a failed year, spelled out. Both record the same
+            failed subjects against next year's enrolment; what differs is the
+            level that enrolment sits in. Without this the choice reads as
+            "repeat the whole level" versus "move up", which is not what either
+            one does. */}
+        {decision === 'repeat' || decision === 'promote_with_carry' ? (
+          <Alert tone="info" title={t(`promotion.override.effect.${decision}.title`)}>
+            {t(`promotion.override.effect.${decision}.description`, {
+              subjects:
+                row.failedSubjects.length > 0
+                  ? row.failedSubjects.map((subject) => subject.nameAr).join('، ')
+                  : t('promotion.override.effect.noSubjects'),
+            })}
+          </Alert>
+        ) : null}
+
         <Field
           label={t('promotion.override.reason')}
           required

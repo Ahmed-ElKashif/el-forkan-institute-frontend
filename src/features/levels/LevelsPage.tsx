@@ -5,12 +5,17 @@ import { ListSkeleton } from '../../shared/react/PagedList';
 import { useCurrentAcademicYearQuery } from '../../shared/api/calendar';
 import { useLevelsQuery } from '../catalogue';
 import { useListSectionsQuery } from '../sections';
+import { GENDERS, type Gender } from './level.model';
 
-/** One rung of the ladder, with this year's enrolment across both its classes. */
+/** One rung of the ladder, with this year's enrolment across both its classes
+ *  and the responsible teacher of each. */
 interface LevelRow {
   levelId: number;
   levelNameAr: string;
   enrolledCount: number;
+  /** The primary of the boys' class and of the girls' class — a level has two
+   *  responsible teachers, one per cohort, and both belong on this row. */
+  responsible: { gender: Gender; name: string | null }[];
 }
 
 /** The front door for the level hub and for the Attendance and Scores tasks:
@@ -63,6 +68,13 @@ export function LevelsPage({ linkTab }: { linkTab?: 'attendance' | 'scores' } = 
       levelId: level.id,
       levelNameAr: level.nameAr,
       enrolledCount: classes.reduce((total, section) => total + section.enrolledCount, 0),
+      responsible: GENDERS.map((gender) => {
+        const cohort = classes.find((section) => section.gender === gender);
+        return {
+          gender,
+          name: cohort?.teachers.find((teacher) => teacher.isPrimary)?.fullName ?? null,
+        };
+      }),
     }));
 
   // No `?gender=`: the destination's own filter defaults to إخوة (`useGenderParam`)
@@ -76,6 +88,23 @@ export function LevelsPage({ linkTab }: { linkTab?: 'attendance' | 'scores' } = 
       header: t('levels.columns.students'),
       numeric: true,
       render: (row) => <span className="ef-num">{formatNumber(row.enrolledCount)}</span>,
+    },
+    /* Both cohorts' responsible teachers, because a level has two and the row
+       is the only place they can be compared. An unstaffed cohort shows as
+       such rather than being omitted — that is the state worth spotting. */
+    {
+      key: 'responsible',
+      header: t('levels.columns.responsible'),
+      render: (row) => (
+        <span className="grid gap-0.5 text-xs">
+          {row.responsible.map((cohort) => (
+            <span key={cohort.gender}>
+              <span className="text-ink-500">{t(`students.gender.${cohort.gender}`)}: </span>
+              {cohort.name ?? <span className="text-ink-400">{t('levels.columns.unstaffed')}</span>}
+            </span>
+          ))}
+        </span>
+      ),
     },
   ];
 

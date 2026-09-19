@@ -5,14 +5,15 @@ import {
   Badge,
   Button,
   Card,
+  DatePicker,
   Dialog,
   Field,
+  formatClassDate,
+  formatNumber,
   IconButton,
   Input,
   Select,
   Toast,
-  formatClassDate,
-  formatNumber,
   type BadgeProps,
 } from '../../ds';
 import { ListSkeleton } from '../../shared/react/PagedList';
@@ -295,16 +296,16 @@ function TermDialog({ term, onClose, onSaved }: { term: Term; onClose: () => voi
         {error ? <Alert tone="danger" title={error} /> : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t('years.terms.startsOn')}>
-            <Input type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} aria-label={t('years.terms.startsOn')} />
+            <DatePicker value={startsOn} onChange={setStartsOn} aria-label={t('years.terms.startsOn')} />
           </Field>
           <Field label={t('years.terms.endsOn')}>
-            <Input type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} aria-label={t('years.terms.endsOn')} />
+            <DatePicker value={endsOn} onChange={setEndsOn} aria-label={t('years.terms.endsOn')} />
           </Field>
           <Field label={t('years.terms.examStartsOn')}>
-            <Input type="date" value={examStartsOn} onChange={(e) => setExamStartsOn(e.target.value)} aria-label={t('years.terms.examStartsOn')} />
+            <DatePicker value={examStartsOn} onChange={setExamStartsOn} aria-label={t('years.terms.examStartsOn')} />
           </Field>
           <Field label={t('years.terms.examEndsOn')}>
-            <Input type="date" value={examEndsOn} onChange={(e) => setExamEndsOn(e.target.value)} aria-label={t('years.terms.examEndsOn')} />
+            <DatePicker value={examEndsOn} onChange={setExamEndsOn} aria-label={t('years.terms.examEndsOn')} />
           </Field>
         </div>
         <Field label={t('years.terms.status')}>

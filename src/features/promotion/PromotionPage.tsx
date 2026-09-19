@@ -27,12 +27,16 @@ import { usePreviewPromotionMutation, useConfirmPromotionMutation } from './prom
 import { PromotionDecisionDialog } from './PromotionDecisionDialog';
 import type { PromotionDecision, PromotionRow } from './promotion.model';
 
+/* `repeat` is the only verdict that asks the head teacher for a decision rather
+   than reporting one: a repeater either stays and retakes the subjects they
+   failed, or is carried up with them. It used to be `neutral`, the quietest
+   tone on the screen, so the rows most needing attention drew the least. */
 const DECISION_TONE: Record<PromotionDecision, BadgeProps['tone']> = {
   promote: 'success',
   graduate: 'brand',
   promote_with_carry: 'warning',
   makeup_required: 'warning',
-  repeat: 'neutral',
+  repeat: 'danger',
 };
 
 const COUNT_TONES: { decision: PromotionDecision; tone: CommitCount['tone'] }[] = [
@@ -302,6 +306,10 @@ function PreviewResult({
   // Run progress: rows a prior confirm already applied vs. still pending.
   const appliedCount = rows.filter((row) => row.finalDecision != null).length;
 
+  /* Surfaced above the table, not buried in the decision column: these are the
+     rows a head teacher has to open and decide before confirming. */
+  const repeating = rows.filter((row) => row.decision === 'repeat' && row.blocker == null);
+
   const counts: CommitCount[] = COUNT_TONES.map(({ decision, tone }) => ({
     label: t(`promotion.decision.${decision}`),
     value: formatNumber(rows.filter((row) => row.decision === decision).length),
@@ -372,6 +380,15 @@ function PreviewResult({
       <p className="m-0 text-sm text-ink-500">
         {t('promotion.progress', { done: formatNumber(appliedCount), total: formatNumber(rows.length) })}
       </p>
+
+      {repeating.length > 0 ? (
+        <Alert
+          tone="warning"
+          title={t('promotion.repeatFlag.title', { count: formatNumber(repeating.length) })}
+        >
+          {t('promotion.repeatFlag.description')}
+        </Alert>
+      ) : null}
       <DataTable
         density="compact"
         columns={columns}

@@ -9,7 +9,7 @@
 --------------------------------------------------------------------------- */
 
 export { cn } from './cn';
-export { formatClassDate, formatHijriDate, formatNumber, formatPercent, formatScore } from './format';
+export { formatClassDate, formatGregorianDate, formatHijriDate, formatNumber, formatPercent, formatScore } from './format';
 
 /* --- core ---------------------------------------------------------------- */
 export { Icon, type IconName, type IconProps } from './core/Icon';
@@ -23,6 +23,8 @@ export { StatCard, type StatCardProps } from './core/StatCard';
 /* --- forms --------------------------------------------------------------- */
 export { Field, type FieldProps } from './forms/Field';
 export { Input, type InputProps } from './forms/Input';
+export { DatePicker, type DatePickerProps } from './forms/DatePicker';
+export { DateTimePicker, type DateTimePickerProps } from './forms/DateTimePicker';
 export { Textarea, type TextareaProps } from './forms/Textarea';
 export { Select, type SelectProps, type SelectOption } from './forms/Select';
 export { Checkbox, type CheckboxProps } from './forms/Checkbox';

@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, CertificateSheet, EmptyState, formatNumber } from '../../ds';
+import { Button, CertificateSheet, EmptyState, formatClassDate, formatNumber } from '../../ds';
 import type { CertificatePrintPayload } from './certificate.model';
 
 /** The printable certificate, rendered outside the app shell so the browser's
@@ -55,7 +55,7 @@ export function CertificatePrintPage() {
           levelName={payload.levelNameAr}
           academicYear={payload.hijriYear != null ? formatNumber(payload.hijriYear) : undefined}
           serial={payload.serialNo ?? undefined}
-          issuedOn={payload.issuedAt.slice(0, 10)}
+          issuedOn={formatClassDate(payload.issuedAt.slice(0, 10))}
           headTeacher={payload.issuedByName}
         />
       </div>

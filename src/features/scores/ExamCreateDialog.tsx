@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
+  DateTimePicker,
   Dialog,
   Field,
   Input,
@@ -80,8 +81,8 @@ export function ExamCreateDialog({
         curriculumId,
         gender: gender === '' ? null : (gender as 'male' | 'female'),
         examType,
-        // datetime-local has no zone; toISOString stamps the required offset.
-        scheduledAt: scheduledAt === '' ? null : new Date(scheduledAt).toISOString(),
+        // DateTimePicker composes the local date and time into an instant.
+        scheduledAt: scheduledAt === '' ? null : scheduledAt,
         durationMin: durationMin === '' ? null : Number(durationMin),
         venue: venue.trim() === '' ? null : venue.trim(),
       }).unwrap();
@@ -147,7 +148,7 @@ export function ExamCreateDialog({
         </div>
 
         <Field label={t('scores.create.scheduledAt')}>
-          <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} aria-label={t('scores.create.scheduledAt')} />
+          <DateTimePicker value={scheduledAt} onChange={setScheduledAt} aria-label={t('scores.create.scheduledAt')} />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
